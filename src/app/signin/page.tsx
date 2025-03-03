@@ -18,6 +18,8 @@ export default function SignIn() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const [isRegistered, setIsRegistered] = useState<boolean>(false);
+    const [step, setStep] = useState<number>(1);
+    const [code, setCode] = useState("");
 
     useEffect(() => {
         if (isRegistered) {
@@ -25,43 +27,75 @@ export default function SignIn() {
         }
       }, [isRegistered, router]);
 
+    // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    //     e.preventDefault();
+
+    //     try {
+    //         const res = await fetch('/api/register', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify({
+    //                 fullname,
+    //                 email,
+    //                 password
+    //             })
+    //         })
+
+    //         if (!res.ok) {
+    //             const data = await res.json();
+    //             Toast_Custom({errormessage: data.error || 'Ошибка регистрации', setError});
+    //         }
+
+    //         const signInResult = await signIn('credentials', {
+    //             fullname,
+    //             email,
+    //             password
+    //         }, { callbackUrl: '/' })
+
+    //         if (signInResult?.ok) {
+    //             setIsRegistered(true);
+    //         } else {
+    //             Toast_Custom({errormessage: signInResult?.error || 'Ошибка входа при регистрации', setError});
+    //         }
+    //     } catch (err) {
+    //         setError((err as Error).message)
+    //     }
+    // }
+
+    const sendCode = async () => {
+        const res = await fetch("/api/auth/sendcode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        alert(data.message);
+        setStep(2);
+    };
+
+    const verifyCode = async () => {
+        const res = await fetch("/api/auth/verify-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, code }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("Успешный вход!");
+          window.location.reload();
+        } else {
+          alert(data.message);
+        }
+      };
+
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        try {
-            const res = await fetch('/api/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    fullname,
-                    email,
-                    password
-                })
-            })
-
-            if (!res.ok) {
-                const data = await res.json();
-                Toast_Custom({errormessage: data.error || 'Ошибка регистрации', setError});
-            }
-
-            const signInResult = await signIn('credentials', {
-                fullname,
-                email,
-                password
-            }, { callbackUrl: '/' })
-
-            if (signInResult?.ok) {
-                setIsRegistered(true);
-            } else {
-                Toast_Custom({errormessage: signInResult?.error || 'Ошибка входа при регистрации', setError});
-            }
-        } catch (err) {
-            setError((err as Error).message)
-        }
+        verifyCode();
     }
-
+    
     return (
         <div className="h-[100vh] flex items-center justify-center px-4">
             <div className="border shadow-xl w-full sm:w-[500px] md:w-[600px] h-[50%] bg-white inline-flex justify-between rounded-xl">

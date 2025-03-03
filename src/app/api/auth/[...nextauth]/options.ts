@@ -2,10 +2,12 @@ import type { NextAuthOptions } from 'next-auth';
 import YandexProvider from "next-auth/providers/yandex";
 import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 export const options: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     YandexProvider({
       clientId: process.env.YANDEX_CLIENT_ID as string,
@@ -44,17 +46,17 @@ export const options: NextAuthOptions = {
       },
     }),
 
-    // EmailProvider({
-    //   server: {
-    //     host: process.env.EMAIL_SERVER_HOST,
-    //     port: Number(process.env.EMAIL_SERVER_PORT),
-    //     auth: {
-    //         user: process.env.EMAIL_SERVER_USER,
-    //         pass: process.env.EMAIL_SERVER_PASSWORD,
-    //     },
-    //   },
-    //   from: process.env.EMAIL_FROM,
-    // }),
+    EmailProvider({
+      server: {
+        host: process.env.EMAIL_SERVER_HOST,
+        port: Number(process.env.EMAIL_SERVER_PORT),
+        auth: {
+            user: process.env.EMAIL_SERVER_USER,
+            pass: process.env.EMAIL_SERVER_PASSWORD,
+        },
+      },
+      from: process.env.EMAIL_FROM,
+    }),
     
     CredentialsProvider({
       name: "Credentials",
