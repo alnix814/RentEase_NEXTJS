@@ -7,21 +7,25 @@ RentEase_NEXTJS — дипломный проект по созданию сер
 Для запуска проекта выполните следующие шаги:
 
 1. **Клонируйте репозиторий:**
+
    ```bash
    git clone https://github.com/alnix814/RentEase_NEXTJS.git
    ```
 
 2. **Перейдите в директорию проекта:**
+
    ```bash
    cd RentEase_NEXTJS
    ```
 
 3. **Установите зависимости:**
+
    ```bash
    npm install
    ```
 
 4. **Запустите сервер разработки:**
+
    ```bash
    npm run dev
    ```

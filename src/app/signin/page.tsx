@@ -3,15 +3,28 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import YandexAuthButton from '@/components/ui/yandexauthbutton';
-import { signIn } from 'next-auth/react';
-import Image from 'next/image'; 
+import { signIn, useSession } from 'next-auth/react';
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSeparator,
+    InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp"
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { IoArrowBackSharp } from "react-icons/io5";
 import { FormEvent, useEffect, useState } from 'react';
 import { Toast_Custom } from '@/components/ui/toast_custom';
+import Step1 from '@/components/ui/steps_registration/step1';
+import Step2 from '@/components/ui/steps_registration/step2';
+import Step3 from '@/components/ui/steps_registration/step3';
+import Step4 from '@/components/ui/steps_registration/step4';
 
 export default function SignIn() {
 
+    const { data: session, update } = useSession();
     const [email, setEmail] = useState<string>("");
     const [fullname, setFullname] = useState<string>("");
     const [password, setPassword] = useState<string>("");
@@ -19,129 +32,66 @@ export default function SignIn() {
     const router = useRouter();
     const [isRegistered, setIsRegistered] = useState<boolean>(false);
     const [step, setStep] = useState<number>(1);
-    const [code, setCode] = useState("");
+    const [code, setCode] = useState<string>("");
 
     useEffect(() => {
         if (isRegistered) {
-          router.push("/");
+            router.push("/");
         }
-      }, [isRegistered, router]);
+    }, [isRegistered, router]);
 
-    // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    //     e.preventDefault();
-
-    //     try {
-    //         const res = await fetch('/api/register', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify({
-    //                 fullname,
-    //                 email,
-    //                 password
-    //             })
-    //         })
-
-    //         if (!res.ok) {
-    //             const data = await res.json();
-    //             Toast_Custom({errormessage: data.error || 'Ошибка регистрации', setError});
-    //         }
-
-    //         const signInResult = await signIn('credentials', {
-    //             fullname,
-    //             email,
-    //             password
-    //         }, { callbackUrl: '/' })
-
-    //         if (signInResult?.ok) {
-    //             setIsRegistered(true);
-    //         } else {
-    //             Toast_Custom({errormessage: signInResult?.error || 'Ошибка входа при регистрации', setError});
-    //         }
-    //     } catch (err) {
-    //         setError((err as Error).message)
-    //     }
-    // }
+    useEffect(() => {
+        if (code.length === 6) {
+            verifyCode();
+        }
+    }, [code]);
 
     const sendCode = async () => {
-        const res = await fetch("/api/auth/sendcode", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-        const data = await res.json();
-        alert(data.message);
-        setStep(2);
-    };
-
-    const verifyCode = async () => {
-        const res = await fetch("/api/auth/verify-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, code }),
+        const res = await fetch("/api/sendcode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
         });
         const data = await res.json();
         if (res.ok) {
-          alert("Успешный вход!");
-          window.location.reload();
-        } else {
-          alert(data.message);
+            Toast_Custom({ errormessage: data.message, setError: setError, type: 'success' });
+            setStep(2);
         }
-      };
+        Toast_Custom({ errormessage: data.message, setError: setError, type: 'success' });
+    };
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const verifyCode = async () => {
+        const res = await fetch("/api/verifycode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fullname, email, code, password }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            setStep(3);
+        } else {
+            Toast_Custom({ errormessage: data.message, setError: setError, type: 'error' });
+            setStep(1);
+        }
+    };
 
-        verifyCode();
+    const continueRegistration = () => {
+        sendCode();
     }
-    
+
+    const finalregistration = () => {
+        signIn('credentials', {redirect: false, email, password});
+        router.push("/");
+    }
+
     return (
         <div className="h-[100vh] flex items-center justify-center px-4">
-            <div className="border shadow-xl w-full sm:w-[500px] md:w-[600px] h-[50%] bg-white inline-flex justify-between rounded-xl">
-                <div className="w-[50%]">
-                    <div className='text-center'>
-                        <div className='flex justify-center mt-3'>
-                            <Image
-                                src="/logo.svg"
-                                alt="logo"
-                                width={60}
-                                height={60}
-                            />
-                        </div>
-                        <div className='text-2xl mt-3'>
-                            <h1>Регистрация</h1>
-                        </div>
-                    </div>
-                    <div className='h-[360px]'>
-                        <form className='p-5 flex flex-col gap-1' onSubmit={handleSubmit}>
-                            <label htmlFor='fullname'>Фамилия Имя</label>
-                            <Input id='fullname' name='fullname' type='text' placeholder='ФИ' value={fullname} onChange={(e) => setFullname(e.target.value)} required/>
-                            <label htmlFor='email'>Email</label>
-                            <Input id='email' name='email' type='email' placeholder='Email' value={email} onChange={(e) => setEmail(e.target.value)} required/>
-                            <label htmlFor='password'>Пароль</label>
-                            <Input id='password' name='password' type='password' placeholder='Пароль' value={password} onChange={(e) => setPassword(e.target.value)} required/>
-                            <Button type='submit' className='mt-3'>Зарегистрироваться</Button>
-
-                            <span className='font-medium text-sm text-center'>Уже есть аккаунт? 
-                                <Link 
-                                href="/login"
-                                className='text-blue-500 hover:text-blue-700 ml-2'
-                                >Войти</Link>
-                            </span>
-                        </form>
-                    </div>
-                </div>
-                <div className="w-[50%]">
-                    <div className='flex justify-center'>
-                        <Image
-                            src="/registration-house.png"
-                            alt="registration"
-                            width={300}
-                            height={300}
-                        />
-                    </div>
-                </div>
+            <div className="border shadow-xl w-full sm:w-[500px] md:w-[600px] h-[50%] bg-white inline-flex justify-center rounded-xl">
+                <button className='h-12' onClick={() => setStep((prev) => (prev - 1))}><IoArrowBackSharp className='text-2xl' /></button>
+                {step === 1 && (<Step1 continueRegistration={continueRegistration} fullname={fullname} setFullname={setFullname} email={email} setEmail={setEmail} password={password} setPassword={setPassword} />)}
+                {step === 2 && (<Step2 setCode={setCode} />)}
+                {step === 3 && (<Step3 setFullname={setFullname} setStep={setStep}/>)}
+                {step === 4 && (<Step4 finalregistration={finalregistration} setPassword={setPassword}/>)}
             </div>
         </div>
     )

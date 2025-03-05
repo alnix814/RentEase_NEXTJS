@@ -21,15 +21,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body
-        className={`${InterSans.className} antialiased`}
-      >
+      <body className={`${InterSans.className} antialiased`}>
         <ClientSessionProvider>
-          <Header/>
+          <Header />
           {children}
-          <Toaster/>
+          <Toaster />
         </ClientSessionProvider>
-
       </body>
     </html>
   );

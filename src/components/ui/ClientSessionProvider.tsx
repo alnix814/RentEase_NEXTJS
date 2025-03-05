@@ -7,6 +7,8 @@ interface ClientSessionProviderProps {
   children: React.ReactNode;
 }
 
-export default function ClientSessionProvider({ children }: ClientSessionProviderProps) {
+export default function ClientSessionProvider({
+  children,
+}: ClientSessionProviderProps) {
   return <SessionProvider>{children}</SessionProvider>;
 }

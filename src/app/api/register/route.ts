@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     if (!fullname || !email || !password) {
       return NextResponse.json(
         { error: "Не указаны имя, email или пароль" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: "Пользователь с таким email уже существует" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ message: "Регистрация успешна" }, { status: 201 });
+    return NextResponse.json(
+      { message: "Регистрация успешна" },
+      { status: 201 },
+    );
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
