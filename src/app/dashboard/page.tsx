@@ -179,13 +179,11 @@ export default function DashboardPage() {
     }
   };
 
-  // Handle avatar upload
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setAvatarFile(file);
 
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
