@@ -38,7 +38,7 @@ export default function Header(classname: HeaderProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (pathname === '/signin' || pathname === '/login') {
+  if (pathname === '/login' || pathname === '/api/auth/verify-request') {
     return null;
   }
 
@@ -76,7 +76,7 @@ export default function Header(classname: HeaderProps) {
           <PopoverContent className="w-64">
             {session ? (
               <div>
-                <div className="border-b px-5 py-2 font-semibold">{session.user?.name}</div>
+                <div className="border-b px-5 py-2 font-semibold">{session.user?.name ?? 'User'}</div>
                 <div className="flex flex-col">
                   <Link href="/dashboard" className="px-5 py-2 hover:bg-gray-100">Мой профиль</Link>
                   <Link href={'/rent_on'} className="px-5 py-2  hover:bg-gray-100">Сдать на RentEase</Link>

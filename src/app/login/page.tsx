@@ -6,9 +6,10 @@ import YandexAuthButton from '@/components/ui/yandexauthbutton';
 import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { redirect, useRouter } from 'next/navigation';
+import { FormEvent, useEffect, useState } from 'react';
 import { Toast_Custom } from '@/components/ui/toast_custom';
+import { set } from 'react-hook-form';
 
 export default function SignIn() {
     const [email, setEmail] = useState<string>("");
@@ -16,35 +17,24 @@ export default function SignIn() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
-    const handleSignIn = async (provider: 'credentials' | 'yandex', data?: { email?: string; password?: string }) => {
-        try {
-            const signInResult = await signIn(provider, {
-                redirect: false,
-                ...data,
-                ...(provider === 'yandex' ? {callbackUrl: '/'} : {})
-            });
-
-            if (signInResult?.ok) {
-                router.push('/');
-                Toast_Custom({ errormessage: 'Вы успешно вошли!', setError, type: 'success' });
-            } else {
-                const errormessage = signInResult?.error as string;
-                setError(errormessage);
-                Toast_Custom({ errormessage, setError });
-                console.log(error);
-            }
-        } catch (err) {
-            setError((err as Error).message);
+    useEffect(() => {
+        if (error) {
+            Toast_Custom({errormessage: error, setError: setError, type: 'error'});
         }
-    };
+    })
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await handleSignIn('credentials', { email, password });
-    };
 
-    const handleYandexSignIn = async () => {
-        await handleSignIn('yandex');
+        const res = await signIn("email", {
+            email,
+        });
+
+        if (res?.error) {
+            setError(res.error);
+        } else {
+            router.push("/");
+        }
     };
 
     return (
@@ -68,20 +58,7 @@ export default function SignIn() {
                         <form className='p-5 flex flex-col gap-1' onSubmit={handleSubmit}>
                             <label htmlFor='email'>Email</label>
                             <Input id='email' name='email' type='email' placeholder='Email' value={email} onChange={(e) => setEmail(e.target.value)} required />
-                            <label htmlFor='password'>Пароль</label>
-                            <Input id='password' name='password' type='password' placeholder='Пароль' value={password} onChange={(e) => setPassword(e.target.value)} required />
                             <Button type='submit' className='mt-3'>Войти</Button>
-
-                            <span className='font-medium text-sm text-center'>Еще нет аккаунта?
-                                <Link
-                                    href="/signin"
-                                    className='text-blue-500 hover:text-blue-700 ml-2'
-                                >Зарегистрироваться</Link>
-                            </span>
-
-                            <div className='flex items-center justify-center pt-5'>
-                                <YandexAuthButton onClick={handleYandexSignIn}/>
-                            </div>
                         </form>
                     </div>
                 </div>

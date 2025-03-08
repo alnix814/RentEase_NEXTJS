@@ -1,115 +1,109 @@
 import type { NextAuthOptions } from 'next-auth';
-import YandexProvider from "next-auth/providers/yandex";
-import CredentialsProvider from "next-auth/providers/credentials";
-import EmailProvider from "next-auth/providers/email";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import EmailProvider from 'next-auth/providers/email';
 import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import { createTransport } from "nodemailer"
 
 export const options: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    YandexProvider({
-      clientId: process.env.YANDEX_CLIENT_ID as string,
-      clientSecret: process.env.YANDEX_CLIENT_SECRET as string,
-      authorization: "https://oauth.yandex.ru/authorize?scope=login:info+login:email+login:avatar+login:birthday",
-
-      async profile(profile) {
-        const user = await prisma.user.findUnique({
-          where: { email: profile.default_email },
-        });
-        if (!user) {
-          const hashedPassword = await bcrypt.hash('yandex', 10);
-          const newUser = await prisma.user.create({
-            data: {
-              name: profile.display_name,
-              email: profile.default_email as string,
-              avatar: `https://avatars.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` || null,
-              password: hashedPassword,
-              type_autorize: 'yandex',
-            },
-          });
-          return {
-            id: newUser.id,
-            name: newUser.name,
-            email: newUser.email,
-            image: newUser.avatar,
-          };
-        } else {
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.avatar,
-          };
-        }
-      },
-    }),
-
     EmailProvider({
       server: {
         host: process.env.EMAIL_SERVER_HOST,
-        port: Number(process.env.EMAIL_SERVER_PORT),
+        port: 587,
         auth: {
-            user: process.env.EMAIL_SERVER_USER,
-            pass: process.env.EMAIL_SERVER_PASSWORD,
-        },
+          user: process.env.EMAIL_SERVER_USER,
+          pass: process.env.EMAIL_SERVER_PASSWORD
+        }
       },
       from: process.env.EMAIL_FROM,
-    }),
-    
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        password: { label: "Пароль", type: "password" },
-        email: { label: "Email", type: "email" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.password || !credentials?.email) return null;
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-
-        if (!user) {
-          throw new Error("Пользователь с таким email не найден");
-        }
-
-        if (!(await bcrypt.compare(credentials.password, user.password))) {
-          throw new Error("Неверный пароль");
-        }
-
-        if (user && (await bcrypt.compare(credentials.password, user.password))) {
-          return { id: user.id, name: user.name, email: user.email };
-        }
-        return null;
-      },
+      async sendVerificationRequest({
+        identifier: email,
+        url,
+        provider: { server, from }
+      }) {
+        const { host } = new URL(url)
+        const transport = createTransport(server)
+        
+        await transport.sendMail({
+          to: email,
+          from,
+          subject: `Вход в ${host}`,
+          html: magicLinkTemplate(url, email)
+        })
+      }
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET as string,
+  session: {
+    strategy: 'jwt',
+  },
   pages: {
-    error: "/signin",
+    error: "/error",
+    signIn: '/',
+    verifyRequest: '/api/auth/verify-request',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile, email, credentials }) {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email as string },
+        });
+
+        if (!existingUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email as string,
+              name: user.email?.split('@')[0],
+              emailVerified: new Date(),
+              avatarUrl: null,
+            },
+          });
+        }
       }
-      return token;
+      return true;
     },
-    async session({ session, user, token }) {
-      const dbUser = await prisma.user.findUnique({
-          where: { email: session.user?.email as string },
-      });
-
-      if (dbUser && session.user) {
-          session.user.name = dbUser.name;
-          session.user.email = dbUser.email;
-          session.user.image = dbUser.avatar;
+    async session({ session, token }) {
+      if (token) {
+        const us = await prisma.user.findUnique({
+          where: { email: token.email as string },
+        });
+        if (session.user) {
+          session.user.name = us?.name;
+          session.user.image = us?.avatarUrl;
+          session.user.email = us?.email;
+        }
       }
-
       return session;
     },
   },
 };
+
+function magicLinkTemplate(url: string, email: string) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div style="max-width: 500px; margin: 0 auto; font-family: Arial;">
+          <h1>🔮 Вход в систему</h1>
+          <p>Привет!</p>
+          <p>Нажмите кнопку ниже для входа:</p>
+          <a 
+            href="${url}" 
+            style="
+              display: inline-block; 
+              padding: 10px 20px; 
+              background-color: #4CAF50; 
+              color: white; 
+              text-decoration: none;
+              border-radius: 5px;
+            "
+          >
+            Войти
+          </a>
+          <p>Ссылка действительна 1 час</p>
+        </div>
+      </body>
+    </html>
+  `
+}

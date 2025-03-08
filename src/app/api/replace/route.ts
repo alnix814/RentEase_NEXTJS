@@ -7,14 +7,16 @@ export async function PUT(req: NextRequest) {
     try {
         const session = await getServerSession();
 
+        console.log(session);
+
         if (!session) {
-            return NextResponse.json({message: 'Не авторизован'}, {status: 401})
+            return NextResponse.json({ message: 'Не авторизован' }, { status: 401 })
         }
 
-        const {username, email} = await req.json();
+        const { username, email } = await req.json();
 
         if (!username || !email) {
-            return NextResponse.json({message: 'Неполные данные, Ошибка сервера'}, {status: 400});
+            return NextResponse.json({ message: 'Неполные данные, Ошибка сервера' }, { status: 400 });
         }
 
         const updatedUser = await prisma.user.update({
@@ -27,17 +29,16 @@ export async function PUT(req: NextRequest) {
             }
         })
         if (updatedUser && session.user) {
-            console.log(session);
             session.user.name = username;
             session.user.email = email;
-            console.log(session);
-            return NextResponse.json({message: 'Данные успешно обновлены'})
+
+            return NextResponse.json(session.user);
         } else {
-            return NextResponse.json({message: 'Ошибка обновления пользователя'}, {status: 500});
+            return NextResponse.json({ message: 'Ошибка обновления пользователя' }, { status: 500 });
         }
-        
+
     } catch (error) {
         console.log(error);
-        return NextResponse.json({error: 'Ошибка сервера'}, {status: 500});
+        return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
     }
 }

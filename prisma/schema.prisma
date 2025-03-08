@@ -8,19 +8,67 @@ datasource db {
 }
 
 model User {
-  id            String  @id @default(uuid())
-  email         String  @unique
-  password      String
-  name          String?
-  avatar        String?
-  type_autorize String?
+  id            String    @id @default(uuid()) // Уникальный ID пользователя
+  name          String?   // Имя пользователя
+  email         String?   @unique // Почта (может быть null, если провайдер не предоставляет)
+  emailVerified DateTime? // Дата подтверждения почты
+  avatarUrl    String?  // Путь или URL к файлу
+  avatarPublicId String? // Для облачных провайдеров
+  accounts      Account[] // Связь с учетными записями OAuth
+  sessions      Session[] // Связь с сессиями
+  properties    Property[]
 }
 
-model VerificationCode {
-  id        String   @id @default(uuid())
-  email     String
-  code      String
-  expiresAt DateTime
+model Account {
+  id                String  @id @default(uuid()) // Уникальный ID записи
+  userId            String  @unique // ID пользователя (связка с User)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String  // Тип авторизации (OAuth, credentials и т. д.)
+  provider          String  // Имя провайдера (yandex, google и т. д.)
+  providerAccountId String  @unique // Уникальный ID пользователя в OAuth-провайдере
+  refresh_token     String? // Refresh token (если выдается)
+  access_token      String? // Access token
+  expires_at        Int?    // Время истечения access_token (в секундах)
+  token_type        String? // Тип токена (обычно "bearer")
+  scope            String?  // Разрешенные scope (если есть)
+  id_token         String?  // JWT ID Token (если есть)
+  session_state    String?  // Состояние сессии (если есть)
 
-  @@unique([email, code])
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid()) // Уникальный ID сессии
+  sessionToken String   @unique // Токен сессии
+  userId       String   // ID пользователя (связка с User)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime // Дата истечения сессии
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Property {
+  id String @id @default(uuid())
+  PropertyImage PropertyImage[]
+  userId String 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name String
+  address String
+  price Decimal
+  settlement String
+  country String
+  rate Float @db.DoublePrecision
+}
+
+model PropertyImage {
+  id String @id @default(uuid())
+  propertyId String
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url String
 }
