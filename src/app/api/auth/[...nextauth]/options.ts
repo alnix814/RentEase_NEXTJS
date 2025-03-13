@@ -30,7 +30,7 @@ export const options: NextAuthOptions = {
           to: email,
           from,
           subject: `Вход в ${host}`,
-          html: magicLinkTemplate(url, email)
+          html: magicLinkTemplate(url)
         })
       }
     }),
@@ -53,7 +53,7 @@ export const options: NextAuthOptions = {
         });
 
         if (!existingUser) {
-          const output = await prisma.user.create({
+          await prisma.user.create({
             data: {
               email: user.email as string,
               name: user.email?.split('@')[0],
@@ -97,7 +97,7 @@ export const options: NextAuthOptions = {
   },
 };
 
-function magicLinkTemplate(url: string, email: string) {
+function magicLinkTemplate(url: string) {
   return `
     <!DOCTYPE html>
     <html>

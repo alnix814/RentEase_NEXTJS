@@ -1,10 +1,6 @@
 import prisma from "@/lib/prisma";
 
-interface PropertyProps {
-    userid?: string;
-}
-
-export async function FetchPropertys({ userid }: PropertyProps) {
+export async function FetchPropertys() {
     try {
 
         const property = await prisma.property.findMany()

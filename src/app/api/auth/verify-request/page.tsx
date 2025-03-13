@@ -28,7 +28,7 @@ export default function Verify_Request() {
                 </p>
                 
                 <p className="text-sm text-gray-500 text-center mt-4">
-                    Если вы не получили письмо, проверьте папку "Спам"
+                    Если вы не получили письмо, проверьте папку Спам
                 </p>
             </div>
         </div>

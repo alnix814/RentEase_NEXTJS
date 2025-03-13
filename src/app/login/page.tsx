@@ -10,13 +10,12 @@ import { Toast_Custom } from '@/components/ui/toast_custom';
 
 export default function SignIn() {
     const [email, setEmail] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
         if (error) {
-            Toast_Custom({errormessage: error, setError: setError, type: 'error'});
+            Toast_Custom({errormessage: error, setError: () => {}, type: 'error'});
         }
     })
 

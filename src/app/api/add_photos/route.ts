@@ -4,6 +4,12 @@ import prisma from "@/lib/prisma";
 const UNSPLASH_ACCESS_KEY = "DiDJPeOwcNt1cE0-r5E3I8P7ETA9JYgFInm8emYJk-M";
 const UNSPLASH_API_URL = "https://api.unsplash.com/search/photos";
 
+interface Image {
+    urls: {
+      full: string;
+    };
+  }
+
 export async function POST() {
     try {
         const properties = await prisma.property.findMany();
@@ -11,7 +17,7 @@ export async function POST() {
             return NextResponse.json({ error: "Нет доступных объектов" }, { status: 400 });
         }
 
-        let savedImages = [];
+        const savedImages = [];
 
         for (const property of properties) {
             const query = `${property.settlement || property.name} real estate`;
@@ -24,7 +30,7 @@ export async function POST() {
                 continue;
             }
 
-            const imageUrls = imageData.results.map((img: any) => img.urls.full);
+            const imageUrls = imageData.results.map((img: Image) => img.urls.full);
 
             for (const imageUrl of imageUrls) {
                 const savedImage = await prisma.propertyImage.create({

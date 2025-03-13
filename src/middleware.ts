@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt"
-import { getServerSession } from "next-auth";
 
 const secret = process.env.NEXTAUTH_SECRET;
 

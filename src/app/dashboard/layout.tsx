@@ -5,26 +5,18 @@ import { Toast_Custom } from "@/components/ui/toast_custom";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter} from "next/navigation";
-import { useEffect, useState } from "react";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import { useEffect } from "react";
 
 export default function DashboardLayout({children,}: Readonly<{children: React.ReactNode;}>) {
 
     const pathName = usePathname();
     const router = useRouter();
     const session = useSession();
-    const [ error, setError ] = useState<string | null>(null);
-
 
     useEffect(() => {
         if (['/dashboard', '/dashboard/account'].includes(pathName) && !session.data?.user) {
           router.push('/login');
-          Toast_Custom({ errormessage: 'Вы не авторизованы', setError: setError, type: 'error' });
+          Toast_Custom({ errormessage: 'Вы не авторизованы', setError: () => {}, type: 'error' });
         }
     });
 

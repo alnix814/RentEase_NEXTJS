@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json(property, { status: 201 });
     } catch (error) {
-        return NextResponse.json({ error: 'Не удалось создать свойство' }, { status: 500 });
+        return NextResponse.json({ message: 'Не удалось создать свойство', error: error }, { status: 500 });
     }
 }
 
@@ -64,7 +64,7 @@ export async function DELETE(request: NextRequest) {
         await prisma.property.delete({ where: { id } });
         return NextResponse.json({ message: 'Свойство удалено' });
     } catch (error) {
-        return NextResponse.json({ error: 'Не удалось удалить свойство' }, { status: 500 });
+        return NextResponse.json({ message: 'Не удалось удалить свойство', error: error }, { status: 500 });
     }
 }
 

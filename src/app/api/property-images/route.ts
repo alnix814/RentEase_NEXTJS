@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       folder: 'RentEase/propertyImages',
     })
 
-    const image = await prisma.propertyImage.create({
+    await prisma.propertyImage.create({
       data: {
         propertyId: propertyId,
         url: uploadimage.secure_url,

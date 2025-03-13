@@ -1,6 +1,5 @@
 import { Popover, PopoverTrigger, PopoverContent } from "@radix-ui/react-popover";
 import { AlignJustify, CircleUserRound } from "lucide-react";
-import Link from "next/link";
 
 export default function PopupHeader() {
   return (

@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator";
 import { useSession } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -24,11 +23,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FiUser, FiLock, FiBell, FiUpload } from "react-icons/fi";
-import prisma from "@/lib/prisma";
 
 export default function DashboardPage() {
   const { data: session, update } = useSession();
-  const [error, setError] = useState<string | null>(null);
   const [isloading, setIsloading] = useState<boolean>(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(session?.user?.image || null);
@@ -113,13 +110,13 @@ export default function DashboardPage() {
           session.user.image = updatedUser.image;
         }
         await update(session);
-        Toast_Custom({ errormessage: updatedUser.message, setError, type: 'success' });
+        Toast_Custom({ errormessage: updatedUser.message, setError: () => {}, type: 'success' });
       } else {
         const errorData = await response.json();
-        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении профиля', setError });
+        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении профиля', setError: () => {}});
       }
-    } catch (err) {
-      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении профиля', setError });
+    } catch{
+      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении профиля', setError: () => {} });
     } finally {
       setIsloading(false);
     }
@@ -141,14 +138,14 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
-        Toast_Custom({ errormessage: 'Пароль успешно обновлен', setError, type: 'success' });
+        Toast_Custom({ errormessage: 'Пароль успешно обновлен', setError: () => {}, type: 'success' });
         passwordForm.reset();
       } else {
         const errorData = await response.json();
-        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении пароля', setError });
+        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении пароля', setError: () => {} });
       }
-    } catch (err) {
-      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении пароля', setError });
+    } catch {
+      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении пароля', setError: () => {} });
     } finally {
       setIsloading(false);
     }
@@ -167,13 +164,13 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
-        Toast_Custom({ errormessage: 'Настройки уведомлений обновлены', setError, type: 'success' });
+        Toast_Custom({ errormessage: 'Настройки уведомлений обновлены', setError: () => {}, type: 'success' });
       } else {
         const errorData = await response.json();
-        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении настроек', setError });
+        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении настроек', setError: () => {} });
       }
-    } catch (err) {
-      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении настроек', setError });
+    } catch {
+      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении настроек', setError: () => {} });
     } finally {
       setIsloading(false);
     }
@@ -202,11 +199,11 @@ export default function DashboardPage() {
       const result = await response.json();
 
       if (result.error) {
-        Toast_Custom({ errormessage: result.error, setError });
+        Toast_Custom({ errormessage: result.error, setError: () => {} });
         return;
       } else {
         await update();
-        Toast_Custom({ errormessage: result.message, setError, type: 'success' });
+        Toast_Custom({ errormessage: result.message, setError: () => {}, type: 'success' });
       }
     }
   };

@@ -2,6 +2,16 @@
   "name": "renteasefinal",
   "version": "0.1.0",
   "private": true,
+  "main": "server.js",
+  "bin": {
+    "renteasefinal": "./server.js"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/sharp/build/Release/**/*",
+      "node_modules/sharp/vendor/lib/**/*"
+    ]
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -5,9 +5,7 @@ import Image from 'next/image';
 import { useDrop } from "react-dnd";
 
 export default function ImageUploader() {
-  const [images, setImages] = useState<string[]>([]);
   const [propertyId, setPropertyId] = useState<string>();
-  const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -62,12 +60,6 @@ export default function ImageUploader() {
 
   return (
     <div>
-      {error && (
-        <div className="text-red-500 mb-3">
-          {error}
-        </div>
-      )}
-
       <div className='mb-3 w-[500px]'>
         ID записи в базе данных
         <Input
@@ -97,10 +89,10 @@ export default function ImageUploader() {
 
         <div
           className={
-            isOver ? 
-            'bg-green-400 w-64 h-64 my-4 flex items-center justify-center border border-blue-500' 
-            : 
-            'bg-blue-200 w-64 h-64 my-4 flex items-center justify-center border border-blue-500'
+            isOver ?
+              'bg-green-400 w-64 h-64 my-4 flex items-center justify-center border border-blue-500'
+              :
+              'bg-blue-200 w-64 h-64 my-4 flex items-center justify-center border border-blue-500'
           }
           ref={(node) => {
             drop(node);
@@ -114,17 +106,6 @@ export default function ImageUploader() {
       <div className='border border-black rounded-lg mt-4'>
         Предпросмотр загруженного изображения:
         <Image className='mt-4 rounded-lg' src={imagePreview || '/img.png'} alt='' height={800} width={800}></Image>
-      </div>
-
-      <div className="mt-4 grid grid-cols-4 gap-4">
-        {images.map((url, index) => (
-          <img
-            key={index}
-            src={url}
-            alt={`Uploaded ${index}`}
-            className="w-full h-40 object-cover"
-          />
-        ))}
       </div>
     </div>
   );

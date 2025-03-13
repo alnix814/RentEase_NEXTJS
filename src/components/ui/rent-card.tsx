@@ -27,12 +27,11 @@ export function CardDemo({
   country,
   price,
   rate,
-  ...props
 }: CardProps) {
   const [isHovered, setIsHovered] = React.useState(false);
 
   return (
-    <div className="w-full sm:w-[300px] md:w-[330px] lg:w-[300px] rounded-xl overflow-hidden">
+    <div className={cn(className, "w-full sm:w-[300px] md:w-[330px] lg:w-[300px] rounded-xl overflow-hidden")}>
       <div
         className="relative w-full h-64"
         onMouseEnter={() => setIsHovered(true)}
