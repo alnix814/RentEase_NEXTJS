@@ -34,26 +34,27 @@ export function CardDemo({
   return (
     <div className="w-full sm:w-[300px] md:w-[330px] lg:w-[300px] rounded-xl overflow-hidden">
       <div
-        className="relative w-full overflow-hidden"
+        className="relative w-full h-64"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <Carousel>
           <CarouselContent>
             {imageSrc.map((image, index) => (
-              <CarouselItem
-                key={index}
-                className="w-full flex-shrink-0"
-              >
-                <Image
+              <CarouselItem key={index} className="relative w-full h-64 overflow-hidden">
+                {image ? (
+                  <Image
                   src={image}
                   alt={`Property image ${index + 1}`}
-                  width={500}
-                  height={500}
-                  className=""
-                  quality={75}
-
+                  layout="fill"
+                  objectFit="cover"
+                  className="w-full h-full"
+                  quality={50}
                 />
+                ) : (
+                  <div className="w-full h-full">К сожалению нет изображения</div>
+                )}
+                
               </CarouselItem>
             ))}
           </CarouselContent>
@@ -91,8 +92,8 @@ export function CardDemo({
         </div>
 
         <div className="mt-1">
+          <p className="text-sm text-muted-foreground">{address}</p>
           <p className="text-sm text-muted-foreground">{name}</p>
-          <p className="text-sm text-muted-foreground">4-9 мая</p>
         </div>
 
         <div className="mt-1">
@@ -100,7 +101,7 @@ export function CardDemo({
             <span className="text-md font-semibold">
               {Number(price.toLocaleString())}
             </span>
-            ₽ ночь
+            ₽ месяц
           </p>
         </div>
       </div>

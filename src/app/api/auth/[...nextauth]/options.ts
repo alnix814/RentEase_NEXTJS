@@ -17,6 +17,7 @@ export const options: NextAuthOptions = {
         }
       },
       from: process.env.EMAIL_FROM,
+      maxAge: 3600,
       async sendVerificationRequest({
         identifier: email,
         url,
@@ -42,26 +43,43 @@ export const options: NextAuthOptions = {
     error: "/error",
     signIn: '/',
     verifyRequest: '/api/auth/verify-request',
+    
   },
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user }) {
       if (user) {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email as string },
         });
 
         if (!existingUser) {
-          await prisma.user.create({
+          const output = await prisma.user.create({
             data: {
               email: user.email as string,
               name: user.email?.split('@')[0],
               emailVerified: new Date(),
               avatarUrl: null,
+              role: 'USER',
             },
           });
         }
       }
       return true;
+    },
+    async jwt({token}) {
+      if (token.email) {
+        const user = await prisma.user.findUnique({
+          where: {
+            email: token.email as string,
+          },
+        });
+
+        if (user) {
+          token.role = user.role;
+        }
+        
+      }
+      return token;
     },
     async session({ session, token }) {
       if (token) {

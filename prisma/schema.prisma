@@ -14,6 +14,7 @@ model User {
   emailVerified DateTime? // Дата подтверждения почты
   avatarUrl    String?  // Путь или URL к файлу
   avatarPublicId String? // Для облачных провайдеров
+  role          String?   // Роль пользователя (админ или юзер)
   accounts      Account[] // Связь с учетными записями OAuth
   sessions      Session[] // Связь с сессиями
   properties    Property[]

@@ -71,7 +71,9 @@ body {
   }
 }
 
-
+img {
+  image-rendering: smooth; 
+}
 
 @layer base {
   * {

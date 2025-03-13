@@ -1,8 +1,7 @@
-// src/app/api/properties/route.ts
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { options } from "../auth/[...nextauth]/options";
+import { getServerSession } from "next-auth";
+import { options } from "@/app/api/auth/[...nextauth]/options";
 
 export async function GET(request: NextRequest) {
     try {
@@ -14,11 +13,13 @@ export async function GET(request: NextRequest) {
             take: limit,
             skip: (page - 1) * limit,
             include: {
-                PropertyImage: true,
+                PropertyImage: true, 
             },
         });
 
-        return NextResponse.json(properties);
+        const hasMore = properties.length === limit;
+
+        return NextResponse.json({ properties, hasMore });
     } catch (error) {
         console.error('Ошибка при получении свойств:', error);
         return NextResponse.json(
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
 
 export async function POST(request: NextRequest) {
 

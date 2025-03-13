@@ -1,51 +1,18 @@
 'use client';
-import React, { useState, useCallback, useEffect } from 'react';
-import { CldUploadWidget, CloudinaryUploadWidgetResults } from 'next-cloudinary';
+import React, { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
+import { useDrop } from "react-dnd";
 
 export default function ImageUploader() {
   const [images, setImages] = useState<string[]>([]);
   const [propertyId, setPropertyId] = useState<string>();
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [newimagePreview, setNewImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleUpload = useCallback((result: CloudinaryUploadWidgetResults) => {
+  const dropRef = useRef<HTMLDivElement | null>(null);
 
-    if (result.info && typeof result.info === 'object' && 'secure_url' in result.info) {
-      const imageUrl = (result.info as { secure_url: string }).secure_url;
-
-      const uploadImage = async () => {
-        try {
-          const response = await fetch('/api/property-images', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              propertyId: propertyId,
-              url: imageUrl,
-            })
-          });
-
-          const responseData = await response.json();
-
-          if (response.ok) {
-            setImages(prevImages => [...prevImages, imageUrl]);
-            setError(null);
-          } else {
-            setError(responseData.message || 'Ошибка при загрузке');
-          }
-        } catch (error) {
-          console.error('Ошибка загрузки:', error);
-          setError('Произошла ошибка при загрузке');
-        }
-      };
-
-      uploadImage();
-    }
-  }, [propertyId]);
 
   const handleImagesChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -58,6 +25,8 @@ export default function ImageUploader() {
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
+
+      setLoading(true);
 
       const res = await fetch('/api/property-images', {
         method: 'POST',
@@ -73,14 +42,23 @@ export default function ImageUploader() {
       const mess = await res.json();
 
       if (res.ok) {
-        alert(`Наконец то ${mess.url}`)
-        setNewImagePreview(mess.url);
+        setLoading(false);
+        alert(mess.message)
       } else {
-        alert(mess.message);
+        setLoading(false);
+        alert(mess.message + '\n' + mess.error.message);
       }
     }
 
   }
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'ITEM',
+    drop: (item) => console.log('Dropped item:', item),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
 
   return (
     <div>
@@ -102,7 +80,11 @@ export default function ImageUploader() {
 
       <div>
         <label className='bg-blue-200 rounded-lg p-2'>
-          Загрузить
+          {loading ? (
+            'Загрузка...'
+          ) : (
+            'Загрузить'
+          )}
           <input
             id="avatar-upload"
             type="file"
@@ -110,13 +92,28 @@ export default function ImageUploader() {
             className="hidden"
             onChange={handleImagesChange}
           />
+
         </label>
+
+        <div
+          className={
+            isOver ? 
+            'bg-green-400 w-64 h-64 my-4 flex items-center justify-center border border-blue-500' 
+            : 
+            'bg-blue-200 w-64 h-64 my-4 flex items-center justify-center border border-blue-500'
+          }
+          ref={(node) => {
+            drop(node);
+            dropRef.current = node;
+          }}>
+          Либо перетащи сюда
+        </div>
 
       </div>
 
-      <div className='border border-black rounded-lg w-[400px] mt-4'>
+      <div className='border border-black rounded-lg mt-4'>
         Предпросмотр загруженного изображения:
-        <Image className='mt-4 rounded-lg' src={imagePreview || '/img.png'} alt='' height={200} width={200}></Image>
+        <Image className='mt-4 rounded-lg' src={imagePreview || '/img.png'} alt='' height={800} width={800}></Image>
       </div>
 
       <div className="mt-4 grid grid-cols-4 gap-4">

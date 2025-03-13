@@ -2,14 +2,11 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import YandexAuthButton from '@/components/ui/yandexauthbutton';
 import { signIn } from 'next-auth/react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { redirect, useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Toast_Custom } from '@/components/ui/toast_custom';
-import { set } from 'react-hook-form';
 
 export default function SignIn() {
     const [email, setEmail] = useState<string>("");
@@ -28,6 +25,7 @@ export default function SignIn() {
 
         const res = await signIn("email", {
             email,
+            callbackUrl: "/",
         });
 
         if (res?.error) {
