@@ -8,42 +8,42 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid()) // Уникальный ID пользователя
-  name          String?   // Имя пользователя
-  email         String?   @unique // Почта (может быть null, если провайдер не предоставляет)
-  emailVerified DateTime? // Дата подтверждения почты
-  avatarUrl    String?  // Путь или URL к файлу
-  avatarPublicId String? // Для облачных провайдеров
-  role          String?   // Роль пользователя (админ или юзер)
-  accounts      Account[] // Связь с учетными записями OAuth
-  sessions      Session[] // Связь с сессиями
-  properties    Property[]
+  id             String     @id @default(uuid())
+  email          String?    @unique
+  name           String?
+  emailVerified  DateTime?
+  avatarPublicId String?
+  avatarUrl      String?
+  role           String?
+  accounts       Account?
+  properties     Property[]
+  sessions       Session[]
 }
 
 model Account {
-  id                String  @id @default(uuid()) // Уникальный ID записи
-  userId            String  @unique // ID пользователя (связка с User)
+  id                String  @id @default(uuid())
+  userId            String  @unique
+  type              String
+  provider          String
+  providerAccountId String  @unique
+  access_token      String?
+  expires_at        Int?
+  id_token          String?
+  refresh_token     String?
+  scope             String?
+  session_state     String?
+  token_type        String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type              String  // Тип авторизации (OAuth, credentials и т. д.)
-  provider          String  // Имя провайдера (yandex, google и т. д.)
-  providerAccountId String  @unique // Уникальный ID пользователя в OAuth-провайдере
-  refresh_token     String? // Refresh token (если выдается)
-  access_token      String? // Access token
-  expires_at        Int?    // Время истечения access_token (в секундах)
-  token_type        String? // Тип токена (обычно "bearer")
-  scope            String?  // Разрешенные scope (если есть)
-  id_token         String?  // JWT ID Token (если есть)
-  session_state    String?  // Состояние сессии (если есть)
 
   @@unique([provider, providerAccountId])
 }
 
 model Session {
-  id           String   @id @default(uuid()) // Уникальный ID сессии
-  sessionToken String   @unique // Токен сессии
-  userId       String   // ID пользователя (связка с User)
+  id           String   @id @default(uuid())
+  userId       String
+  expires      DateTime
+  sessionToken String   @unique
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expires      DateTime // Дата истечения сессии
 }
 
 model VerificationToken {
@@ -55,21 +55,21 @@ model VerificationToken {
 }
 
 model Property {
-  id String @id @default(uuid())
+  id            String          @id @default(uuid())
+  userId        String
+  name          String
+  address       String
+  price         Decimal
+  settlement    String
+  country       String
+  rate          Float
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   PropertyImage PropertyImage[]
-  userId String 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name String
-  address String
-  price Decimal
-  settlement String
-  country String
-  rate Float @db.DoublePrecision
 }
 
 model PropertyImage {
-  id String @id @default(uuid())
+  id         String   @id @default(uuid())
   propertyId String
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  url String
+  url        String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }

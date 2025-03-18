@@ -7,8 +7,10 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Decimal } from "@prisma/client/runtime/library";
+import { useRouter } from "next/navigation";
 
 type CardProps = React.ComponentProps<typeof Card> & {
+  id: string;
   imageSrc: string[];
   name: string;
   country: string;
@@ -27,8 +29,14 @@ export function CardDemo({
   country,
   price,
   rate,
+  id,
 }: CardProps) {
   const [isHovered, setIsHovered] = React.useState(false);
+  const router = useRouter();
+  
+  const onClick = () => {
+    router.push(`property/${id}`);
+  }
 
   return (
     <div className={cn(className, "w-full sm:w-[300px] md:w-[330px] lg:w-[300px] rounded-xl overflow-hidden")}>
@@ -79,7 +87,7 @@ export function CardDemo({
         </Carousel>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-2 bg-gray-200 rounded-lg p-2" onClick={onClick} style={{cursor: 'pointer'}}>
         <div className="flex justify-between items-center">
           <h5 className="text-mg font-semibold">
             {settlement} ({country})

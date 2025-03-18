@@ -8,6 +8,20 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
         const page = Number(searchParams.get('page') || 1);
         const limit = Number(searchParams.get('limit') || 10);
+        const id = searchParams.get('id') || undefined;
+
+        if (id) {
+            const property = await prisma.property.findUnique({
+                where: {
+                    id: id
+                },
+                include: {
+                    PropertyImage: true, 
+                },
+            });
+
+            return NextResponse.json({ property });
+        }
 
         const properties = await prisma.property.findMany({
             take: limit,

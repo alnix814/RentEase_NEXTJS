@@ -77,6 +77,7 @@ export default function Home() {
               <div key={property.id} className="w-full flex justify-center">
                 <div className="w-full">
                   <CardDemo
+                    id={property.id}
                     imageSrc={property.PropertyImage.map(img => img.url)}
                     country={property.country}
                     settlement={property.settlement}
