@@ -9,7 +9,6 @@ import { Button } from "../ui/button";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { useEffect, useState } from "react";
 
 interface HeaderProps {
     classname?: string;
@@ -19,24 +18,6 @@ export default function Header(classname: HeaderProps) {
 
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [ hidden, setHidden ] = useState(false);
-
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-
-    const handleScroll = () => {
-      if (window.scrollY > lastScrollY) {
-        setHidden(true);
-      } else {
-        setHidden(false);
-      }
-      lastScrollY = window.scrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll);
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   if (pathname === '/login' || pathname === '/api/auth/verify-request') {
     return null;
