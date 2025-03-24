@@ -14,14 +14,22 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const loadItems = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (loadingMore || loading || !hasMore) return;
 
-    setLoading(true);
+
 
     try {
-      const itemsPerPage = 15;
+      const itemsPerPage = 18;
+
+      if (page > 1) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       const response = await fetch(`/api/properties?page=${page}&limit=${itemsPerPage}`, { cache: 'no-store' });
 
       if (!response.ok) {
@@ -37,22 +45,24 @@ export default function Home() {
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
     } finally {
+      setLoadingMore(false);
       setLoading(false);
     }
   }, [page, loading, hasMore]);
 
   useEffect(() => {
+    loadItems();
+  }, []);
+
+  useEffect(() => {
     const handleScroll = () => {
-      const bottom = window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight;
+      const bottom = window.innerHeight + window.scrollY === document.documentElement.offsetHeight;
       if (bottom && hasMore && !loading) {
         loadItems();
       }
     };
 
     window.addEventListener('scroll', handleScroll);
-
-    loadItems();
-
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
@@ -63,7 +73,7 @@ export default function Home() {
       <div className="mx-auto w-full max-w-[1920px]">
         <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8">
           {loading ? (
-            Array.from({ length: 20 }).map((_, index) => (
+            Array.from({ length: 18 }).map((_, index) => (
               <div key={index} className="w-full flex justify-center">
                 <div className="w-full">
                   <Skeleton className="h-64 mb-4" />
@@ -86,6 +96,18 @@ export default function Home() {
                     address={property.address}
                     price={property.price}
                   />
+                </div>
+              </div>
+            ))
+          )}
+
+          {loadingMore && (
+            Array.from({ length: 18 }).map((_, index) => (
+              <div key={index} className="w-full flex justify-center">
+                <div className="w-full">
+                  <Skeleton className="h-64 mb-4" />
+                  <Skeleton className="h-6 mb-2" />
+                  <Skeleton className="h-4 w-3/4" />
                 </div>
               </div>
             ))

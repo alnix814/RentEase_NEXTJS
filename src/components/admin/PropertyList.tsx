@@ -9,7 +9,7 @@ export default function PropertyList() {
     async function fetchProperties() {
       const response = await fetch('/api/properties');
       const data = await response.json();
-      setProperties(data);
+      setProperties(data.properties);
     }
     fetchProperties();
   }, []);

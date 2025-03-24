@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
                 },
                 include: {
                     PropertyImage: true, 
+                    user: true,
                 },
             });
 

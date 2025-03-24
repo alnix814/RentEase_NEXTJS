@@ -210,11 +210,11 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto py-6 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-2">Настройки профиля</h1>
-      <p className="text-sm text-muted-foreground mb-6">Управляйте своими данными и настройками</p>
+      <h1 className="text-2xl font-bold mb-2 text-center xl:text-left">Настройки профиля</h1>
+      <p className="text-sm text-muted-foreground mb-6 text-center xl:text-left">Управляйте своими данными и настройками</p>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 w-full xl:w-auto">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <FiUser size={16} />
             <span>Профиль</span>
@@ -296,7 +296,7 @@ export default function DashboardPage() {
                           </FormItem>
                         )}
                       />
-                      <Button className="flex items-center gap-2" type="submit">
+                      <Button className="flex items-center gap-2 w-full xl:w-auto" type="submit">
                         {isloading ? (
                           <>
                             Сохранить <Loading />

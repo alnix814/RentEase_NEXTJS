@@ -7,68 +7,97 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Toast_Custom } from '@/components/ui/toast_custom';
+import { Loader2 } from "lucide-react"
 
 export default function SignIn() {
     const [email, setEmail] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
     const router = useRouter();
 
     useEffect(() => {
         if (error) {
-            Toast_Custom({errormessage: error, setError: () => {}, type: 'error'});
+            Toast_Custom({ errormessage: error, setError: () => { }, type: 'error' });
         }
     })
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const res = await signIn("email", {
-            email,
-            callbackUrl: "/",
-        });
+        try {
+            setLoading(true);
 
-        if (res?.error) {
-            setError(res.error);
-        } else {
-            router.push("/");
+            const res = await signIn("email", {
+                email,
+                callbackUrl: "/",
+            });
+
+            if (res?.error) {
+                setError(res.error);
+            } else {
+                router.push("/");
+            }
+        } finally {
+            setLoading(false);
         }
+
     };
 
     return (
-        <div className="h-[100vh] flex items-center justify-center px-4">
-            <div className="border shadow-xl w-full sm:w-[500px] md:w-[600px] h-[50%] bg-white inline-flex justify-between rounded-xl">
-                <div className="w-[50%]">
-                    <div className='text-center'>
-                        <div className='flex justify-center mt-3'>
-                            <Image
-                                src="/logo.svg"
-                                alt="logo"
-                                width={60}
-                                height={60}
+        <div className="flex h-screen flex-col justify-center px-6 py-12 lg:px-8">
+            <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+                <Image
+                    src='logo.svg'
+                    width={55}
+                    height={55}
+                    alt='logo'
+                    className='mx-auto h-14 w-auto'
+                ></Image>
+                <h2 className="mt-10 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
+                    Войдите в свою учетную запись
+                </h2>
+            </div>
+
+            <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+                <form onSubmit={handleSubmit} method="POST" className="space-y-6">
+                    <div>
+                        <label htmlFor="email" className="block text-sm/6 font-medium text-gray-900">
+                            Электронная почта
+                        </label>
+                        <div className="mt-2">
+                            <Input
+                                id="email"
+                                name="email"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="email"
+                                className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 sm:text-sm/6"
                             />
                         </div>
-                        <div className='text-2xl mt-3'>
-                            <h1>Авторизация</h1>
-                        </div>
                     </div>
-                    <div className='h-[360px]'>
-                        <form className='p-5 flex flex-col gap-1' onSubmit={handleSubmit}>
-                            <label htmlFor='email'>Email</label>
-                            <Input id='email' name='email' type='email' placeholder='Email' value={email} onChange={(e) => setEmail(e.target.value)} required />
-                            <Button type='submit' className='mt-3'>Войти</Button>
-                        </form>
+
+                    <div>
+                        {loading ? (
+                            <Button
+                                type='submit'
+                                className='flex w-full justify-center rounded-md bg-black px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-gray-800 duration-200'
+                                disabled
+                            >
+                                <Loader2 className='animate-spin' />
+                                Подождите
+                            </Button>
+                        ) : (
+                            <Button
+                                type='submit'
+                                className='flex w-full justify-center rounded-md bg-black px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-gray-800 duration-200'
+                            >
+                                Войти
+                            </Button>
+                        )}
                     </div>
-                </div>
-                <div className="w-[50%]">
-                    <div className='flex justify-center'>
-                        <Image
-                            src="/registration-house.png"
-                            alt="registration"
-                            width={300}
-                            height={300}
-                        />
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     );

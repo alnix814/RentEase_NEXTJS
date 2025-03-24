@@ -93,7 +93,7 @@ export function CardDemo({
             {settlement} ({country})
           </h5>
           <div className="flex items-center gap-1">
-            <TiStarFullOutline className="text-yellow-500" />
+            <TiStarFullOutline color="orange" />
             <p>{rate}</p>
           </div>
         </div>
