@@ -1,12 +1,68 @@
 import type { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import EmailProvider from 'next-auth/providers/email';
 import prisma from '@/lib/prisma';
 import { createTransport } from "nodemailer"
+import YandexProvider from 'next-auth/providers/yandex';
 
 export const options: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
+    YandexProvider({
+      clientId: process.env.YANDEX_CLIENT_ID as string,
+      clientSecret: process.env.YANDEX_CLIENT_SECRET as string,
+
+      id: "yandex",
+      name: "Yandex",
+      authorization:
+        "https://oauth.yandex.ru/authorize?scope=login:info+login:email+login:avatar",
+      token: "https://oauth.yandex.ru/token",
+      userinfo: "https://login.yandex.ru/info?format=json",
+
+      style: {
+        logo: "/yandex.png",
+        bg: "#ffcc00",
+        text: "#000",
+      },
+
+      async profile(profile) {
+        return {
+          id: profile.id,
+          name: profile.display_name ?? profile.real_name ?? profile.first_name,
+          email: profile.default_email,
+          image:
+            !profile.is_avatar_empty && profile.default_avatar_id
+              ? `https://avatars.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200`
+              : null,
+        }
+      },
+    }),
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        email: { label: 'Email', type: 'text', placeholder: 'jsmith' },
+        password: { label: 'Password', type: 'password' }
+      },
+      async authorize(credentials, req) {
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials?.email
+          },
+        });
+
+        if (!user) {
+          return null;
+        }
+
+        if (credentials?.email === user.email && credentials?.password === user.password) {
+          return user;
+        } else {
+          return null;
+        }
+
+      }
+    }),
     EmailProvider({
       server: {
         host: process.env.EMAIL_SERVER_HOST,
@@ -25,7 +81,7 @@ export const options: NextAuthOptions = {
       }) {
         const { host } = new URL(url)
         const transport = createTransport(server)
-        
+
         await transport.sendMail({
           to: email,
           from,
@@ -43,30 +99,55 @@ export const options: NextAuthOptions = {
     error: "/error",
     signIn: '/',
     verifyRequest: '/api/auth/verify-request',
-    
+
   },
+  debug: true,
   callbacks: {
-    async signIn({ user }) {
+    async signIn({ user, account}) {
       if (user) {
-        const existingUser = await prisma.user.findUnique({
+        let existingUser = await prisma.user.findUnique({
           where: { email: user.email as string },
         });
 
         if (!existingUser) {
-          await prisma.user.create({
+          existingUser = await prisma.user.create({
             data: {
               email: user.email as string,
-              name: user.email?.split('@')[0],
+              name: user.email?.split('@')[0] || user.name as string,
               emailVerified: new Date(),
-              avatarUrl: null,
-              role: 'USER',
+              avatarUrl: user.image,
+              aPassword: false,
+              role: 'user',
+              accounts: {
+                create: {
+                  type: account?.type!,
+                  provider: account?.provider!,
+                  providerAccountId: account?.providerAccountId!,
+                  access_token: account?.access_token || null,
+                  refresh_token: account?.refresh_token || null,
+                  expires_at: account?.expires_at || null,
+                },
+              },
+            },
+          });
+
+          await prisma.account.create({
+            data: {
+              userId: existingUser.id, // ✅ Теперь точно будет id
+              type: account?.type!,
+              provider: account?.provider!,
+              providerAccountId: account?.providerAccountId!,
+              access_token: account?.access_token || null,
+              refresh_token: account?.refresh_token || null,
+              expires_at: account?.expires_at || null,
             },
           });
         }
       }
+
       return true;
     },
-    async jwt({token}) {
+    async jwt({ token }) {
       if (token.email) {
         const user = await prisma.user.findUnique({
           where: {
@@ -76,8 +157,9 @@ export const options: NextAuthOptions = {
 
         if (user) {
           token.role = user.role;
+          token.id = user.id;
         }
-        
+
       }
       return token;
     },
@@ -87,9 +169,11 @@ export const options: NextAuthOptions = {
           where: { email: token.email as string },
         });
         if (session.user) {
+          session.user.id = us?.id;
           session.user.name = us?.name;
           session.user.image = us?.avatarUrl;
           session.user.email = us?.email;
+          session.user.aPassword = us?.aPassword;
         }
       }
       return session;

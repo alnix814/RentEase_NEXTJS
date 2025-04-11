@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
                     id: id
                 },
                 include: {
-                    PropertyImage: true, 
+                    PropertyImage: true,
                     user: true,
                 },
             });
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
             take: limit,
             skip: (page - 1) * limit,
             include: {
-                PropertyImage: true, 
+                PropertyImage: true,
             },
         });
 
@@ -46,40 +46,49 @@ export async function GET(request: NextRequest) {
 
 
 export async function POST(request: NextRequest) {
-
-    const user = await getServerSession(options);
-
-    const user_db = await prisma.user.findUnique({
-        where: {
-            email: user?.user?.email || '',
-        }
-    })
-
     try {
-        const data = await request.json();
-        const property = await prisma.property.create({
-            data: {
-                ...data,
-                userId: user_db?.id,
+        const session = await getServerSession(options);
+
+        if (!session?.user?.email) {
+            return NextResponse.json({ message: 'Требуется авторизация' }, { status: 401 });
+        }
+
+        const user_db = await prisma.user.findUnique({
+            where: {
+                email: session.user.email,
             }
         });
-        return NextResponse.json(property, { status: 201 });
+
+        if (!user_db) {
+            return NextResponse.json({ message: 'Пользователь не найден' }, { status: 404 });
+        }
+
+        const data = await request.json();
+
+        const { images, ...propertyData } = data;
+
+        const finalData = {
+            ...propertyData,
+            userId: user_db.id,
+            rate: 0,
+        };
+
+        if (!data.name || !data.type || !data.address) {
+            return NextResponse.json({ message: 'Отсутствуют обязательные поля' }, { status: 400 });
+        }
+
+        const property = await prisma.property.create({
+            data: {
+                ...finalData
+            },
+        });
+
+        return NextResponse.json({ message: 'Свойство успешно создано', property: property }, { status: 201 });
     } catch (error) {
-        return NextResponse.json({ message: 'Не удалось создать свойство', error: error }, { status: 500 });
+        console.log(error instanceof Error ? error.message : String(error));
+        return NextResponse.json({
+            message: 'Не удалось создать свойство',
+            error: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }
-
-export async function DELETE(request: NextRequest) {
-    const id = request.nextUrl.searchParams.get('id');
-    if (!id) {
-        return NextResponse.json({ error: 'ID не указан' }, { status: 400 });
-    }
-
-    try {
-        await prisma.property.delete({ where: { id } });
-        return NextResponse.json({ message: 'Свойство удалено' });
-    } catch (error) {
-        return NextResponse.json({ message: 'Не удалось удалить свойство', error: error }, { status: 500 });
-    }
-}
-

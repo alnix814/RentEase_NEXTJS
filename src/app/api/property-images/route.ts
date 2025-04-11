@@ -1,27 +1,44 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { randomUUID } from "crypto";
+import { writeFile } from "fs/promises";
+import { join } from "path";
 
 export async function POST(request: NextRequest) {
   try {
 
-    const {propertyId, url} = await request.json();
+    const formData = await request.formData();
+    const propertyId = formData.get("propertyId") as string;
+    const files = formData.getAll("images") as File[];
 
-    const uploadimage = await cloudinary.uploader.upload(url, {
-      folder: 'RentEase/propertyImages',
-    })
+    const uploadedUrls = [];
 
-    await prisma.propertyImage.create({
-      data: {
-        propertyId: propertyId,
-        url: uploadimage.secure_url,
-      }
+    for (const file of files) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const tmpPath = `/tmp/${randomUUID()}.webp`;
+      await writeFile(tmpPath, buffer);
+
+      const result = await cloudinary.uploader.upload(tmpPath, {
+        folder: "RentEase/propertyImages",
+      });
+
+      uploadedUrls.push(result.secure_url);
+    }
+
+    await prisma.propertyImage.createMany({
+      data: uploadedUrls.map((url) => ({
+        propertyId,
+        url,
+      }))
     });
 
     return NextResponse.json(
       {
-        message: 'Изображение успешно загружено',
-        url: uploadimage.secure_url,
+        message: 'Изображения успешно загружено',
+        url: uploadedUrls,
       },
       { status: 201 }
     );
@@ -29,7 +46,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { message: 'Ошибка при загрузке изображения', error: error },
-      { status: 500 }, 
+      { status: 500 },
     );
   }
 }

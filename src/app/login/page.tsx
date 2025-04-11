@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Toast_Custom } from '@/components/ui/toast_custom';
 import { Loader2 } from "lucide-react"
+import { Separator } from '@/components/ui/separator';
 
 export default function SignIn() {
     const [email, setEmail] = useState<string>("");
@@ -43,11 +44,15 @@ export default function SignIn() {
 
     };
 
+    const handleWithPassword = () => {
+        router.push('/login/loginwithpassword');
+    }
+
     return (
         <div className="flex h-screen flex-col justify-center px-6 py-12 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
                 <Image
-                    src='logo.svg'
+                    src='/logo.svg'
                     width={55}
                     height={55}
                     alt='logo'
@@ -82,7 +87,7 @@ export default function SignIn() {
                         {loading ? (
                             <Button
                                 type='submit'
-                                className='flex w-full justify-center rounded-md bg-black px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-gray-800 duration-200'
+                                className='flex w-full justify-center rounded-md bg-black px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs'
                                 disabled
                             >
                                 <Loader2 className='animate-spin' />
@@ -91,14 +96,37 @@ export default function SignIn() {
                         ) : (
                             <Button
                                 type='submit'
-                                className='flex w-full justify-center rounded-md bg-black px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-gray-800 duration-200'
+                                className='flex w-full justify-center rounded-md bg-black px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs'
                             >
                                 Войти
                             </Button>
                         )}
                     </div>
                 </form>
+                <div>
+                    <Button
+                        onClick={() => handleWithPassword()}
+                        variant={'outline'}
+                        className='flex w-full justify-center rounded-md text-sm/6 mt-4 font-semibold border-gray-400 text-black shadow-xs'
+                    >
+                        Войти с паролем
+                    </Button>
+                </div>
+                <div>
+                    <div className='flex items-center gap-4 mt-4'>
+                        <Separator className=' bg-gray-400 flex-1' />
+                        <span className='text-sm text-gray-500 mb-1'>или</span>
+                        <Separator className=' bg-gray-400 flex-1' />
+                    </div>
+                    <div className='mt-4 flex justify-center'>
+                        <Button className='bg-black rounded-xl py-6' onClick={() => signIn('yandex', { callbackUrl: '/' })}>
+                            <Image src={'/yandex.png'} width={40} height={40} alt='yandex'/>
+                            Войти с помощью Yandex ID
+                        </Button>
+                    </div>
+                </div>
             </div>
+
         </div>
     );
 }

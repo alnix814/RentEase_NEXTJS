@@ -1,470 +1,448 @@
 'use client';
 
+import { useState } from 'react';
+import AddressInput from "@/components/ui/addressinput";
+import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button"
-import { useSession } from "next-auth/react";
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { useState } from "react";
-import { Toast_Custom } from "@/components/ui/toast_custom";
-import Loading from '@/components/ui/loading_orbit';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FiUser, FiLock, FiBell, FiUpload } from "react-icons/fi";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardHeader } from "@/components/ui/card";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import { Home, Building2, Check, Info, Loader2, Camera, XCircle } from "lucide-react";
+import { Toast_Custom } from '@/components/ui/toast_custom';
 
 export default function DashboardPage() {
-  const { data: session, update } = useSession();
-  const [isloading, setIsloading] = useState<boolean>(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(session?.user?.image || null);
+    const [previewImages, setPreviewImages] = useState<string[]>([]);
+    const [type, setType] = useState<string>('apartment');
+    const [loading, setLoading] = useState<boolean>(false);
 
-  // Profile form schema
-  const profileFormSchema = z.object({
-    username: z.string().min(3, {
-      message: 'Нужно написать минимум 3 символа'
-    }).max(15, { message: 'Максимальное количество символов: (15)' }),
-    email: z.string().email({ message: 'Введите корректный email' })
-  });
+    const rentFormSchema = z.object({
+        name: z.string().min(3, { message: 'Нужно написать минимум 3 символа' }).max(15, { message: 'Максимальное количество символов: (15)' }),
+        type: z.string().min(3, { message: 'Нужно написать минимум 3 символа' }),
+        address: z.string().min(3, { message: 'Нужно написать минимум 3 символа' }),
+        price: z.string().min(1).transform(val => Number(val)),
+        settlement: z.string().min(3, { message: 'Нужно написать минимум 3 символа' }),
+        country: z.string().min(1, { message: 'Нужно написать минимум 1 символа' }),
+        bathroom: z.string().min(1).transform(val => Number(val)),
+        floor: z.string().min(1).transform(val => Number(val)),
+        near: z.string().min(3, { message: 'Нужно написать минимум 3 символа' }),
+        rooms: z.string().min(1).transform(val => Number(val)),
+        sleeping: z.string().min(1).transform(val => Number(val)),
+        images: z.array(z.instanceof(File)),
+    });
 
-  // Password form schema
-  const passwordFormSchema = z.object({
-    currentPassword: z.string().min(1, { message: 'Введите текущий пароль' }),
-    newPassword: z.string().min(8, { message: 'Пароль должен содержать минимум 8 символов' }),
-    confirmPassword: z.string().min(8, { message: 'Подтвердите новый пароль' }),
-  }).refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Пароли не совпадают",
-    path: ["confirmPassword"],
-  });
-
-  // Notification form schema
-  const notificationFormSchema = z.object({
-    emailNotifications: z.boolean(),
-    marketingEmails: z.boolean(),
-    securityAlerts: z.boolean(),
-  });
-
-  // Initialize forms
-  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      username: session?.user?.name || "",
-      email: session?.user?.email || "",
-    },
-  });
-
-  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
-    resolver: zodResolver(passwordFormSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
-  });
-
-  const notificationForm = useForm<z.infer<typeof notificationFormSchema>>({
-    resolver: zodResolver(notificationFormSchema),
-    defaultValues: {
-      emailNotifications: true,
-      marketingEmails: false,
-      securityAlerts: true,
-    },
-  });
-
-  // Handle profile update
-  const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
-    setIsloading(true);
-    const formData = new FormData();
-    formData.append('username', values.username);
-    formData.append('email', values.email);
-
-    if (avatarFile) {
-      formData.append('avatar', avatarFile);
-    }
-
-    try {
-      const response = await fetch('/api/replace', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+    const rentForm = useForm<z.infer<typeof rentFormSchema>>({
+        resolver: zodResolver(rentFormSchema),
+        defaultValues: {
+            name: "",
+            type: type,
+            address: "",
+            price: 0,
+            settlement: "",
+            country: "",
+            bathroom: 0,
+            floor: 0,
+            near: "",
+            rooms: 0,
+            sleeping: 0,
+            images: [],
         },
-        body: JSON.stringify(values),
-      });
+    });
 
-      if (response.ok) {
-        const updatedUser = await response.json();
-        if (session?.user) {
-          session.user.name = updatedUser.name;
-          session.user.email = updatedUser.email;
-          session.user.image = updatedUser.image;
+    const onRentSubmit = async (values: z.infer<typeof rentFormSchema>) => {
+        try {
+            setLoading(true);
+
+            const response = await fetch('/api/properties', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(values),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+
+                const formData = new FormData();
+                formData.append("propertyId", data.property.id);
+                previewImages.map((img) => {
+                    formData.append("images", img);
+                });
+
+                const response_images = await fetch('/api/property-images', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: formData,
+                });
+
+                if (response_images.ok) {
+                    Toast_Custom({ errormessage: 'Объявление успешно опубликовано!', setError: () => { }, type: 'success' });
+                    rentForm.reset();
+                    setPreviewImages([]);
+                } else {
+                    Toast_Custom({ errormessage: 'Ошибка при отправке изображений', setError: () => { }, type: 'error' });
+                }
+            } else {
+                Toast_Custom({ errormessage: data.message, setError: () => { }, type: 'error' });
+                Toast_Custom({ errormessage: data.error, setError: () => { }, type: 'error' });
+            }
+        } catch (error) {
+            console.error('Ошибка при отправке данных:', error);
+        } finally {
+            setLoading(false);
         }
-        await update(session);
-        Toast_Custom({ errormessage: updatedUser.message, setError: () => {}, type: 'success' });
-      } else {
-        const errorData = await response.json();
-        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении профиля', setError: () => {}});
-      }
-    } catch{
-      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении профиля', setError: () => {} });
-    } finally {
-      setIsloading(false);
-    }
-  };
+    };
 
-  // Handle password update
-  const onPasswordSubmit = async (values: z.infer<typeof passwordFormSchema>) => {
-    setIsloading(true);
-    try {
-      const response = await fetch('/api/user/password', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          currentPassword: values.currentPassword,
-          newPassword: values.newPassword,
-        }),
-      });
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const filesArray = Array.from(e.target.files);
+            const newPreviewImages = filesArray.map(file => URL.createObjectURL(file));
+            setPreviewImages(prev => [...prev, ...newPreviewImages]);
 
-      if (response.ok) {
-        Toast_Custom({ errormessage: 'Пароль успешно обновлен', setError: () => {}, type: 'success' });
-        passwordForm.reset();
-      } else {
-        const errorData = await response.json();
-        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении пароля', setError: () => {} });
-      }
-    } catch {
-      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении пароля', setError: () => {} });
-    } finally {
-      setIsloading(false);
-    }
-  };
+            rentForm.setValue('images', filesArray);
+        }
+    };
 
-  // Handle notification settings update
-  const onNotificationSubmit = async (values: z.infer<typeof notificationFormSchema>) => {
-    setIsloading(true);
-    try {
-      const response = await fetch('/api/user/notifications', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      });
+    const removeImage = (index: number) => {
+        const newImages = [...previewImages];
+        newImages.splice(index, 1);
+        setPreviewImages(newImages);
+    };
 
-      if (response.ok) {
-        Toast_Custom({ errormessage: 'Настройки уведомлений обновлены', setError: () => {}, type: 'success' });
-      } else {
-        const errorData = await response.json();
-        Toast_Custom({ errormessage: errorData.message || 'Ошибка при обновлении настроек', setError: () => {} });
-      }
-    } catch {
-      Toast_Custom({ errormessage: 'Произошла ошибка при обновлении настроек', setError: () => {} });
-    } finally {
-      setIsloading(false);
-    }
-  };
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      const formData = new FormData();
-      formData.append('email', session?.user?.email || '');
-      formData.append('file', file);
-
-      const response = await fetch('/api/user_avatar', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const result = await response.json();
-
-      if (result.error) {
-        Toast_Custom({ errormessage: result.error, setError: () => {} });
-        return;
-      } else {
-        await update();
-        Toast_Custom({ errormessage: result.message, setError: () => {}, type: 'success' });
-      }
-    }
-  };
-
-  return (
-    <div className="container mx-auto py-6 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-2 text-center xl:text-left">Настройки профиля</h1>
-      <p className="text-sm text-muted-foreground mb-6 text-center xl:text-left">Управляйте своими данными и настройками</p>
-
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-6 w-full xl:w-auto">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <FiUser size={16} />
-            <span>Профиль</span>
-          </TabsTrigger>
-          <TabsTrigger value="password" className="flex items-center gap-2">
-            <FiLock size={16} />
-            <span>Пароль</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <FiBell size={16} />
-            <span>Уведомления</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Profile Tab */}
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>Информация профиля</CardTitle>
-              <CardDescription>Обновите свои личные данные и фото профиля</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-8 mb-6">
-                <div className="flex flex-col items-center gap-4">
-                  <Avatar className="w-24 h-24">
-                    <AvatarImage src={avatarPreview || undefined} />
-                    <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col items-center">
-                    <label htmlFor="avatar-upload" className="cursor-pointer">
-                      <div className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-                        <FiUpload size={16} />
-                        <span>Загрузить фото</span>
-                      </div>
-                      <input
-                        id="avatar-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                      />
-                    </label>
-                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG или GIF. Макс. 2MB</p>
-                  </div>
+    return (
+        <div className="w-full max-w-6xl mx-auto py-8 px-4">
+            <div className="mb-8 flex items-center space-x-3">
+                <div className="bg-black w-1 h-12 rounded"></div>
+                <div>
+                    <h1 className="text-3xl font-bold">Разместите свою недвижимость</h1>
+                    <p className="text-gray-600 mt-1">Заполните форму ниже для публикации объявления</p>
                 </div>
+            </div>
 
-                <div className="flex-1">
-                  <Form {...profileForm}>
-                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
-                      <FormField
-                        control={profileForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Никнейм</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder={session?.user?.name || 'Никнейм'} />
-                            </FormControl>
-                            <FormDescription>
-                              Ваше отображаемое имя на сайте
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={profileForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Почта</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder={session?.user?.email || 'Почта'} />
-                            </FormControl>
-                            <FormDescription>
-                              Почта для связи с вами
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button className="flex items-center gap-2 w-full xl:w-auto" type="submit">
-                        {isloading ? (
-                          <>
-                            Сохранить <Loading />
-                          </>
-                        ) : (
-                          'Сохранить'
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <Card className="border border-gray-200 shadow-md rounded-xl overflow-hidden">
+                <CardHeader className="bg-gray-50 border-b border-gray-200 p-0">
+                    <Tabs defaultValue="apartment" className="w-full">
+                        <TabsList className="w-full rounded-none border-b border-gray-200 bg-transparent grid grid-cols-2">
+                            <TabsTrigger
+                                value="apartment"
+                                onClick={() => {
+                                    setType('apartment');
+                                    rentForm.setValue('type', 'apartment');
+                                }}
+                                className="flex-1 py-4 rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-black data-[state=active]:shadow-none"
+                            >
+                                <div className="flex items-center justify-center gap-2">
+                                    <Building2 className="w-5 h-5" />
+                                    <span className="font-medium">Квартира</span>
+                                </div>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="house"
+                                onClick={() => {
+                                    setType('house');
+                                    rentForm.setValue('type', 'house');
+                                }}
+                                className="flex-1 py-4 rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-black data-[state=active]:shadow-none"
+                            >
+                                <div className="flex items-center justify-center gap-2">
+                                    <Home className="w-5 h-5" />
+                                    <span className="font-medium">Дом</span>
+                                </div>
+                            </TabsTrigger>
+                        </TabsList>
 
-        {/* Password Tab */}
-        <TabsContent value="password">
-          <Card>
-            <CardHeader>
-              <CardTitle>Изменение пароля</CardTitle>
-              <CardDescription>Обновите свой пароль для повышения безопасности</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...passwordForm}>
-                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6">
-                  <FormField
-                    control={passwordForm.control}
-                    name="currentPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Текущий пароль</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="newPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Новый пароль</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Минимум 8 символов
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Подтвердите пароль</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button className="flex items-center gap-2" type="submit">
-                    {isloading ? (
-                      <>
-                        Обновить пароль <Loading />
-                      </>
-                    ) : (
-                      'Обновить пароль'
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                        <TabsContent value="apartment" className="p-6 pt-8">
+                            <Form {...rentForm}>
+                                <form onSubmit={rentForm.handleSubmit(onRentSubmit)} className="space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Название</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            className="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            placeholder="Название объекта недвижимости" />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="address"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Адрес</FormLabel>
+                                                    <FormControl>
+                                                        <AddressInput
+                                                            classname="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            filterr='house'
+                                                            placeholder='Введите полный адрес' />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="settlement"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Населенный пункт</FormLabel>
+                                                    <FormControl>
+                                                        <Controller
+                                                            name='settlement'
+                                                            control={rentForm.control}
+                                                            render={({ field }) => (
+                                                                <AddressInput
+                                                                    filterr='locality'
+                                                                    {...field}
+                                                                    placeholder='Город, посёлок и т.д.'
+                                                                    classname="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                                />
+                                                            )}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="country"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Страна</FormLabel>
+                                                    <FormControl>
+                                                        <AddressInput
+                                                            classname="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            filterr='country'
+                                                            placeholder='Выберите страну' />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="price"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Цена</FormLabel>
+                                                    <FormControl>
+                                                        <div className="relative">
+                                                            <Input
+                                                                className="bg-gray-50 border-gray-200 rounded-lg p-3 pl-8 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                                {...field}
+                                                                type="number"
+                                                                min={1}
+                                                                placeholder="Стоимость" />
+                                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₽</span>
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="bathroom"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Количество санузлов</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            className="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            type="number"
+                                                            min={1}
+                                                            placeholder="Кол-во санузлов" />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="floor"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Этаж</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            className="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            type="number"
+                                                            min={1}
+                                                            placeholder="Этаж" />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="near"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Инфраструктура рядом</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            className="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            placeholder="Школа, метро, парк и т.д." />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="rooms"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Количество комнат</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            className="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            type="number"
+                                                            min={1}
+                                                            placeholder="Общее кол-во комнат" />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={rentForm.control}
+                                            name="sleeping"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Количество спален</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            className="bg-gray-50 border-gray-200 rounded-lg p-3 focus-visible:ring-1 focus-visible:ring-black focus-visible:border-black transition-shadow"
+                                                            {...field}
+                                                            type="number"
+                                                            min={1}
+                                                            placeholder="Кол-во спален" />
+                                                    </FormControl>
+                                                    <FormMessage className="text-red-500 text-sm" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Настройки уведомлений</CardTitle>
-              <CardDescription>Выберите, какие уведомления вы хотите получать</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...notificationForm}>
-                <form onSubmit={notificationForm.handleSubmit(onNotificationSubmit)} className="space-y-6">
-                  <FormField
-                    control={notificationForm.control}
-                    name="emailNotifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Email уведомления</FormLabel>
-                          <FormDescription>
-                            Получать уведомления о новых сообщениях и бронированиях
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={notificationForm.control}
-                    name="marketingEmails"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Маркетинговые рассылки</FormLabel>
-                          <FormDescription>
-                            Получать новости и специальные предложения
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={notificationForm.control}
-                    name="securityAlerts"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Уведомления безопасности</FormLabel>
-                          <FormDescription>
-                            Получать уведомления о входе в аккаунт и изменениях безопасности
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <Button className="flex items-center gap-2" type="submit">
-                    {isloading ? (
-                      <>
-                        Сохранить настройки <Loading />
-                      </>
-                    ) : (
-                      'Сохранить настройки'
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+                                    <div className="bg-gray-50 p-6 rounded-lg border border-gray-300">
+                                        <div className="text-gray-700 font-medium block mb-3">Фотографии объекта</div>
+
+                                        <div className="flex flex-col items-center justify-center">
+                                            <label className="w-full flex flex-col items-center px-4 py-6 bg-white rounded-lg shadow-sm border border-gray-300 cursor-pointer hover:bg-gray-50 transition-all duration-200 group">
+                                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-black bg-opacity-5 group-hover:bg-opacity-10 transition-all duration-200">
+                                                    <Camera className="w-6 h-6 text-black" />
+                                                </div>
+                                                <span className="mt-3 text-base text-black font-medium">Загрузить фотографии</span>
+                                                <span className="mt-1 text-sm text-gray-500">PNG, JPG, WEBP до 10 МБ</span>
+                                                <input
+                                                    id="file-upload"
+                                                    type="file"
+                                                    multiple
+                                                    onChange={(e) => {
+                                                        handleImageChange(e);
+                                                    }}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </div>
+
+                                        {previewImages.length > 0 && (
+                                            <div className="mt-6">
+                                                <p className="text-sm font-medium text-gray-700 mb-3">Загруженные фотографии:</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                                    {previewImages.map((img, i) => (
+                                                        <div key={i} className="relative h-32 rounded-lg overflow-hidden shadow-sm border border-gray-200 group">
+                                                            <img
+                                                                src={img}
+                                                                alt={`Preview ${i + 1}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full p-1">
+                                                                <Check className="w-3 h-3" />
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeImage(i)}
+                                                                className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                <XCircle className="w-8 h-8 text-white" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2">
+                                        <div className="flex items-center text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+                                            <Info className="w-4 h-4 mr-2 flex-shrink-0" />
+                                            <span className="text-sm">Все поля обязательны для заполнения</span>
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="bg-black hover:bg-gray-800 text-white py-2 px-6 rounded-lg transition-colors w-full sm:w-auto"
+                                        >
+                                            {loading ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <span>Публикация...</span>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <span>Опубликовать объявление</span>
+                                                </div>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </Form>
+                        </TabsContent>
+
+                        <TabsContent value="house" className="p-6 pt-8">
+                            <Form {...rentForm}>
+                                <form onSubmit={rentForm.handleSubmit(onRentSubmit)} className="space-y-8">
+                                    {/* Same form fields as apartment but with house-specific content */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {/* Copy of all form fields */}
+                                        {/* ... */}
+                                    </div>
+                                </form>
+                            </Form>
+                        </TabsContent>
+                    </Tabs>
+                </CardHeader>
+            </Card>
+        </div>
+    );
 }

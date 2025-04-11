@@ -9,8 +9,10 @@ datasource db {
 
 model User {
   id             String     @id @default(uuid())
-  email          String?    @unique
-  name           String?
+  email          String     @unique
+  name           String
+  aPassword      Boolean
+  password       String?
   emailVerified  DateTime?
   avatarPublicId String?
   avatarUrl      String?
@@ -58,6 +60,12 @@ model Property {
   id            String          @id @default(uuid())
   userId        String
   name          String
+  type          String
+  floor         Int?
+  rooms         Int
+  sleeping      Int
+  bathroom      Int
+  near          String?
   address       String
   price         Decimal
   settlement    String

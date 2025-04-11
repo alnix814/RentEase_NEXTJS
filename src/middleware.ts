@@ -4,27 +4,24 @@ import { getToken } from "next-auth/jwt"
 const secret = process.env.NEXTAUTH_SECRET;
 
 export async function middleware(req: NextRequest) {
+    const url = req.nextUrl;
 
     const token = await getToken({ req, secret });
 
     if (!token) {
+        return NextResponse.redirect(new URL('/login', req.url));
+    }
+
+    if (url.pathname.startsWith('/admin') && token.role != 'admin') {
         return NextResponse.redirect(new URL('/not-access', req.url));
     }
 
-    try {
+    const response = NextResponse.next();
+    response.headers.set('X-Custom-Header', 'Middleware Active');
 
-        if (token.role != 'admin') {
-            return NextResponse.redirect(new URL('/not-access', req.url));
-        }
-
-        return NextResponse.next();
-    } catch (error) {
-        console.log(`catch: ${error}`);
-        return NextResponse.redirect(new URL('/not-access', req.url));
-    }
-
+    return response;
 }
 
 export const config = {
-    matcher: ["/admin/:path*"], 
-  };
+    matcher: ["/admin/:path*", "/dashboard/:path*"],
+};

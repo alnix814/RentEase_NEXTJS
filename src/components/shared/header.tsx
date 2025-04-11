@@ -19,13 +19,13 @@ export default function Header(classname: HeaderProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  if (pathname === '/login' || pathname === '/api/auth/verify-request') {
+  if (pathname === '/login' || pathname === '/api/auth/verify-request' || pathname === '/login/loginwithpassword') {
     return null;
   }
 
   return (
     <header className={cn(`w-full border-b shadow-sm bg-white sticky top-0 z-50`, classname)}>
-      <div className="container mx-auto flex items-center justify-between py-4 px-6">
+      <div className="container mx-auto flex items-center justify-between py-4 px-6 h-16">
 
         <Link href="/" className="text-xl font-bold flex items-center gap-2">
           <Image src="/logo.svg" width={45} height={45} alt="Logo" />
@@ -36,7 +36,7 @@ export default function Header(classname: HeaderProps) {
           <Link href="/rent" className="text-gray-700 hover:text-black transition">
             Сдать жильё
           </Link>
-          <Link href="/help" className="text-gray-700 hover:text-black transition">
+          <Link href="/support" className="text-gray-700 hover:text-black transition">
             Центр помощи
           </Link>
         </nav>
@@ -59,8 +59,9 @@ export default function Header(classname: HeaderProps) {
               <div>
                 <div className="border-b px-5 py-2 font-semibold">{session.user?.name ?? 'User'}</div>
                 <div className="flex flex-col">
-                  <Link href="/dashboard" className="px-5 py-2 hover:bg-gray-100">Мой профиль</Link>
-                  <Link href={'/rent_on'} className="px-5 py-2  hover:bg-gray-100">Сдать на RentEase</Link>
+                  <Link href="/dashboard/account" className="px-5 py-2 hover:bg-gray-100">Мой профиль</Link>
+                  <Link href={'/rent'} className="px-5 py-2  hover:bg-gray-100">Сдать на RentEase</Link>
+                  <Link href={'/support'} className="px-5 py-2 hover:bg-gray-100">Центр помощи</Link>
                   <Button onClick={() => signOut()} variant={"outline"}  className="mt-4 text-left hover:bg-gray-100"><span className="font-semibold">Выйти</span></Button>
                 </div>
               </div>
