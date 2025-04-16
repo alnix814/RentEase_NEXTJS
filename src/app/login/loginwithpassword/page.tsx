@@ -4,12 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { signIn } from 'next-auth/react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -22,10 +20,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Toast_Custom } from '@/components/ui/toast_custom';
 
 export default function LoginWithPassword() {
-    const [email, setEmail] = useState<string>("");
-    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const router = useRouter();
 
     const loginSchema = z.object({
         email: z.string().email({ message: 'Введите корректный email' }),

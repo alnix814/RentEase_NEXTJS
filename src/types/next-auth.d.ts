@@ -7,7 +7,9 @@ declare module "next-auth" {
             name?: string | null;
             email?: string | null;
             image?: string | null;
-            aPassword?: Boolean | null;
+            aPassword?: boolean | null;
         };
     }
 }
+
+export default NextAuth; 

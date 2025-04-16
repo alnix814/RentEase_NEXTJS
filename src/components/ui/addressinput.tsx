@@ -12,8 +12,19 @@ interface InputProps {
   onChange: (value: string) => void;
 }
 
+// Интерфейс для данных от Яндекс Геокодера
+interface GeocoderFeature {
+  GeoObject: {
+    metaDataProperty: {
+      GeocoderMetaData: {
+        kind: string;
+        text: string;
+      }
+    }
+  }
+}
+
 const AddressInput: React.FC<InputProps> = ({value, onChange, classname, filterr, placeholder}) => {
-  const [address, setAddress] = useState<string>("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   const fetchSuggestions = async (query: string) => {
@@ -29,8 +40,8 @@ const AddressInput: React.FC<InputProps> = ({value, onChange, classname, filterr
       const results = response.data.response.GeoObjectCollection.featureMember;
 
       const filteredResults = results
-        .filter((item: any) => item.GeoObject.metaDataProperty.GeocoderMetaData.kind === filterr)
-        .map((item: any) => item.GeoObject.metaDataProperty.GeocoderMetaData.text)
+        .filter((item: GeocoderFeature) => item.GeoObject.metaDataProperty.GeocoderMetaData.kind === filterr)
+        .map((item: GeocoderFeature) => item.GeoObject.metaDataProperty.GeocoderMetaData.text)
         .slice(0, 4);
 
       setSuggestions(filteredResults);
@@ -41,8 +52,6 @@ const AddressInput: React.FC<InputProps> = ({value, onChange, classname, filterr
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setAddress(value);
-    
     onChange(value);
     fetchSuggestions(value);
   };

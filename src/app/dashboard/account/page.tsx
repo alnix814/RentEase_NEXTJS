@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FiUser, FiLock, FiBell, FiUpload } from "react-icons/fi";
+import { FiUser, FiLock, FiBell, FiUpload, FiMail, FiShield, FiAlertCircle } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -258,48 +258,91 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold mb-2 text-center xl:text-left">Настройки профиля</h1>
-      <p className="text-sm text-muted-foreground mb-6 text-center xl:text-left">Управляйте своими данными и настройками</p>
-
+    <div className="container mx-auto max-w-5xl">
+      {/* Шапка профиля */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-6 mb-8 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+          <div className="relative group">
+            <Avatar className="w-24 h-24 border-4 border-white dark:border-gray-700 shadow-md">
+              <AvatarImage src={avatarPreview ? avatarPreview : session?.user?.image as string} />
+              <AvatarFallback className="text-xl font-bold">{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            <label htmlFor="avatar-upload" className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-full transition-all duration-200 cursor-pointer">
+              <FiUpload className="text-white opacity-0 group-hover:opacity-100 w-6 h-6" />
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </label>
+          </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-2xl font-bold">{session?.user?.name || 'Пользователь'}</h1>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 dark:text-gray-300 mt-1">
+              <FiMail className="w-4 h-4" />
+              <span>{session?.user?.email || 'email@example.com'}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 justify-center md:justify-start">
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 rounded-full text-xs font-medium">
+                Аккаунт активен
+              </span>
+              {session?.user.aPassword ? (
+                <span className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 rounded-full text-xs font-medium flex items-center gap-1">
+                  <FiShield className="w-3 h-3" />
+                  <span>Защищен паролем</span>
+                </span>
+              ) : (
+                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 rounded-full text-xs font-medium flex items-center gap-1">
+                  <FiAlertCircle className="w-3 h-3" />
+                  <span>Требуется пароль</span>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Основные вкладки */}
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-6 w-full xl:w-auto">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
+        <TabsList className="mb-6 grid grid-cols-3 h-12">
+          <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-800">
             <FiUser size={16} />
             <span>Профиль</span>
           </TabsTrigger>
-          <TabsTrigger value="password" className="flex items-center gap-2">
+          <TabsTrigger value="password" className="flex items-center gap-2 data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-800">
             <FiLock size={16} />
             <span>Пароль</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-800">
             <FiBell size={16} />
             <span>Уведомления</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* Profile Tab */}
+        {/* Вкладка профиля */}
         <TabsContent value="profile">
-          <Card>
-            <CardHeader>
+          <Card className="border border-gray-200 dark:border-gray-700 shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
               <CardTitle>Информация профиля</CardTitle>
               <CardDescription>Обновите свои личные данные и фото профиля</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-8 mb-6">
-                <div className="flex flex-col items-center gap-4">
-                  <Avatar className="w-24 h-24">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="flex flex-col items-center gap-4 md:border-r md:pr-8 md:w-1/3">
+                  <Avatar className="w-24 h-24 border-2 border-gray-100 dark:border-gray-700">
                     <AvatarImage src={avatarPreview ? avatarPreview : session?.user?.image as string}/>
-                    <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>-
+                    <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-center">
-                    <label htmlFor="avatar-upload" className="cursor-pointer">
-                      <div className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+                    <label htmlFor="avatar-upload-btn" className="cursor-pointer">
+                      <div className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
                         <FiUpload size={16} />
                         <span>Загрузить фото</span>
                       </div>
                       <input
-                        id="avatar-upload"
+                        id="avatar-upload-btn"
                         type="file"
                         accept="image/*"
                         className="hidden"
@@ -320,7 +363,11 @@ export default function DashboardPage() {
                           <FormItem>
                             <FormLabel>Никнейм</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder={session?.user?.name || 'Никнейм'} />
+                              <Input 
+                                {...field} 
+                                placeholder={session?.user?.name || 'Никнейм'} 
+                                className="focus-visible:ring-blue-500 border-gray-300 dark:border-gray-600"
+                              />
                             </FormControl>
                             <FormDescription>
                               Ваше отображаемое имя на сайте
@@ -336,7 +383,11 @@ export default function DashboardPage() {
                           <FormItem>
                             <FormLabel>Почта</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder={session?.user?.email || 'Почта'} />
+                              <Input 
+                                {...field} 
+                                placeholder={session?.user?.email || 'Почта'} 
+                                className="focus-visible:ring-blue-500 border-gray-300 dark:border-gray-600"
+                              />
                             </FormControl>
                             <FormDescription>
                               Почта для связи с вами
@@ -345,13 +396,16 @@ export default function DashboardPage() {
                           </FormItem>
                         )}
                       />
-                      <Button className="flex items-center gap-2 w-full xl:w-auto" type="submit">
+                      <Button 
+                        className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800" 
+                        type="submit"
+                      >
                         {isloading ? (
-                          <>
-                            Сохранить <Loader2 className='animate-spin' />
-                          </>
+                          <div className="flex items-center gap-2">
+                            Сохранение <Loader2 className='animate-spin' />
+                          </div>
                         ) : (
-                          'Сохранить'
+                          'Сохранить изменения'
                         )}
                       </Button>
                     </form>
@@ -362,16 +416,19 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
 
-        {/* Password Tab */}
+        {/* Вкладка пароля */}
         <TabsContent value="password">
-          <Card>
+          <Card className="border border-gray-200 dark:border-gray-700 shadow-sm">
             {session?.user.aPassword ? (
               <>
-                <CardHeader>
-                  <CardTitle>Обновите пароль</CardTitle>
+                <CardHeader className="bg-gradient-to-r from-green-50 to-white dark:from-gray-800 dark:to-gray-900">
+                  <CardTitle className="flex items-center gap-2">
+                    <FiShield className="text-green-600 dark:text-green-500" size={18} />
+                    <span>Обновите пароль</span>
+                  </CardTitle>
                   <CardDescription>Обновите свой пароль для повышения безопасности</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <Form {...passwordForm}>
                     <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6">
                       <FormField
@@ -381,46 +438,63 @@ export default function DashboardPage() {
                           <FormItem>
                             <FormLabel>Текущий пароль</FormLabel>
                             <FormControl>
-                              <Input type="password" {...field} />
+                              <Input 
+                                type="password" 
+                                {...field} 
+                                className="focus-visible:ring-green-500 border-gray-300 dark:border-gray-600"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={passwordForm.control}
-                        name="newPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Новый пароль</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Минимум 8 символов
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={passwordForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Подтвердите пароль</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button className="flex items-center gap-2" type="submit">
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <FormField
+                          control={passwordForm.control}
+                          name="newPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Новый пароль</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  {...field} 
+                                  className="focus-visible:ring-green-500 border-gray-300 dark:border-gray-600"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Минимум 8 символов
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={passwordForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Подтвердите пароль</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  {...field} 
+                                  className="focus-visible:ring-green-500 border-gray-300 dark:border-gray-600"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800" 
+                        type="submit"
+                      >
                         {isloading ? (
-                          <>
-                            Обновить пароль <Loader2 className='animate-spin' />
-                          </>
+                          <div className="flex items-center gap-2">
+                            Обновление пароля <Loader2 className='animate-spin' />
+                          </div>
                         ) : (
                           'Обновить пароль'
                         )}
@@ -431,44 +505,67 @@ export default function DashboardPage() {
               </>
             ) : (
               <>
-                <CardHeader>
-                  <CardTitle>Создайте пароль для учетной записи</CardTitle>
-                  <CardDescription>Сейчас у вас не установлен пароль, <br />но вы можете это исправить.</CardDescription>
+                <CardHeader className="bg-gradient-to-r from-yellow-50 to-white dark:from-gray-800 dark:to-gray-900">
+                  <CardTitle className="flex items-center gap-2">
+                    <FiAlertCircle className="text-yellow-600 dark:text-yellow-500" size={18} />
+                    <span>Создайте пароль для учетной записи</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Сейчас у вас не установлен пароль, но вы можете это исправить
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
+                  <div className="mb-6 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      Установка пароля добавит дополнительный уровень защиты вашему аккаунту
+                    </p>
+                  </div>
                   <Form {...createpassword}>
                     <form onSubmit={createpassword.handleSubmit(onCreatePasswordSubmit)} className="space-y-6">
-                      <FormField
-                        control={createpassword.control}
-                        name="newPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Введите пароль</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={createpassword.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Подтвердите пароль</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button className="flex items-center gap-2" type="submit">
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <FormField
+                          control={createpassword.control}
+                          name="newPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Введите пароль</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  {...field} 
+                                  className="focus-visible:ring-yellow-500 border-gray-300 dark:border-gray-600"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={createpassword.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Подтвердите пароль</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  {...field} 
+                                  className="focus-visible:ring-yellow-500 border-gray-300 dark:border-gray-600"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <Button 
+                        className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800" 
+                        type="submit"
+                      >
                         {isloading ? (
-                          <>
-                            Создать пароль <Loader2 className='animate-spin' />
-                          </>
+                          <div className="flex items-center gap-2">
+                            Создание пароля <Loader2 className='animate-spin' />
+                          </div>
                         ) : (
                           'Создать пароль'
                         )}
@@ -478,25 +575,27 @@ export default function DashboardPage() {
                 </CardContent>
               </>
             )}
-
           </Card>
         </TabsContent>
 
-        {/* Notifications Tab */}
+        {/* Вкладка уведомлений */}
         <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Настройки уведомлений</CardTitle>
+          <Card className="border border-gray-200 dark:border-gray-700 shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-white dark:from-gray-800 dark:to-gray-900">
+              <CardTitle className="flex items-center gap-2">
+                <FiBell className="text-purple-600 dark:text-purple-500" size={18} />
+                <span>Настройки уведомлений</span>
+              </CardTitle>
               <CardDescription>Выберите, какие уведомления вы хотите получать</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <Form {...notificationForm}>
-                <form onSubmit={notificationForm.handleSubmit(onNotificationSubmit)} className="space-y-6">
+                <form onSubmit={notificationForm.handleSubmit(onNotificationSubmit)} className="space-y-4">
                   <FormField
                     control={notificationForm.control}
                     name="emailNotifications"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Email уведомления</FormLabel>
                           <FormDescription>
@@ -507,6 +606,7 @@ export default function DashboardPage() {
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            className="data-[state=checked]:bg-purple-600 dark:data-[state=checked]:bg-purple-700"
                           />
                         </FormControl>
                       </FormItem>
@@ -516,7 +616,7 @@ export default function DashboardPage() {
                     control={notificationForm.control}
                     name="marketingEmails"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Маркетинговые рассылки</FormLabel>
                           <FormDescription>
@@ -527,6 +627,7 @@ export default function DashboardPage() {
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            className="data-[state=checked]:bg-purple-600 dark:data-[state=checked]:bg-purple-700"
                           />
                         </FormControl>
                       </FormItem>
@@ -536,7 +637,7 @@ export default function DashboardPage() {
                     control={notificationForm.control}
                     name="securityAlerts"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Уведомления безопасности</FormLabel>
                           <FormDescription>
@@ -547,16 +648,20 @@ export default function DashboardPage() {
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            className="data-[state=checked]:bg-purple-600 dark:data-[state=checked]:bg-purple-700"
                           />
                         </FormControl>
                       </FormItem>
                     )}
                   />
-                  <Button className="flex items-center gap-2" type="submit">
+                  <Button 
+                    className="mt-4 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800" 
+                    type="submit"
+                  >
                     {isloading ? (
-                      <>
-                        Сохранить настройки <Loader2 className='animate-spin' />
-                      </>
+                      <div className="flex items-center gap-2">
+                        Сохранение настроек <Loader2 className='animate-spin' />
+                      </div>
                     ) : (
                       'Сохранить настройки'
                     )}

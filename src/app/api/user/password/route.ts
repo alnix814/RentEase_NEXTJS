@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const {newPassword, email} = await req.json();
 
     try {
-        const result = await prisma.user.update({
+        await prisma.user.update({
             where: {
                 email: email,
             },
@@ -50,7 +50,7 @@ export async function PUT(req: NextRequest) {
         }
 
         return NextResponse.json({message: 'Пароль успешно изменен', status: 200});
-    } catch (error) {
+    } catch {
         return NextResponse.json({message: 'Ошибка сервера'});
     }
 }

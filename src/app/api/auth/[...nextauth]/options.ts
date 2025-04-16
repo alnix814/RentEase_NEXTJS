@@ -1,10 +1,10 @@
-import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import EmailProvider from 'next-auth/providers/email';
 import prisma from '@/lib/prisma';
 import { createTransport } from "nodemailer"
 import YandexProvider from 'next-auth/providers/yandex';
+import { NextAuthOptions } from "next-auth";
 
 export const options: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -44,7 +44,7 @@ export const options: NextAuthOptions = {
         email: { label: 'Email', type: 'text', placeholder: 'jsmith' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         const user = await prisma.user.findUnique({
           where: {
             email: credentials?.email
@@ -120,12 +120,12 @@ export const options: NextAuthOptions = {
               role: 'user',
               accounts: {
                 create: {
-                  type: account?.type!,
-                  provider: account?.provider!,
-                  providerAccountId: account?.providerAccountId!,
-                  access_token: account?.access_token || null,
-                  refresh_token: account?.refresh_token || null,
-                  expires_at: account?.expires_at || null,
+                  type: account?.type as string,
+                  provider: account?.provider as string,
+                  providerAccountId: account?.providerAccountId as string,
+                  access_token: account?.access_token as string ,
+                  refresh_token: account?.refresh_token as string ,
+                  expires_at: account?.expires_at as number ,
                 },
               },
             },
@@ -134,12 +134,12 @@ export const options: NextAuthOptions = {
           await prisma.account.create({
             data: {
               userId: existingUser.id, // ✅ Теперь точно будет id
-              type: account?.type!,
-              provider: account?.provider!,
-              providerAccountId: account?.providerAccountId!,
-              access_token: account?.access_token || null,
-              refresh_token: account?.refresh_token || null,
-              expires_at: account?.expires_at || null,
+              type: account?.type as string,
+              provider: account?.provider as string,
+              providerAccountId: account?.providerAccountId as string,
+              access_token: account?.access_token as string ,
+              refresh_token: account?.refresh_token as string ,
+              expires_at: account?.expires_at as number ,
             },
           });
         }

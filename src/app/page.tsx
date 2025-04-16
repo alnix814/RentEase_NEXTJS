@@ -48,11 +48,11 @@ export default function Home() {
       setLoadingMore(false);
       setLoading(false);
     }
-  }, [page, loading, hasMore]);
+  }, [page, loading, hasMore, loadingMore]);
 
   useEffect(() => {
     loadItems();
-  }, []);
+  }, [loadItems]);
 
   useEffect(() => {
     const handleScroll = () => {
