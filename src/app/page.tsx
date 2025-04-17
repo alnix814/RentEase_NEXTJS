@@ -19,8 +19,6 @@ export default function Home() {
   const loadItems = useCallback(async () => {
     if (loadingMore || loading || !hasMore) return;
 
-
-
     try {
       const itemsPerPage = 18;
 
@@ -33,7 +31,7 @@ export default function Home() {
       const response = await fetch(`/api/properties?page=${page}&limit=${itemsPerPage}`, { cache: 'no-store' });
 
       if (!response.ok) {
-        throw new Error('Не удалось загрузить данные');
+        throw new Error("Не удалось загрузить данные");
       }
 
       const result = await response.json();
