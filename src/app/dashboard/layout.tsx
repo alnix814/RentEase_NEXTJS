@@ -25,7 +25,7 @@ export default function DashboardLayout({ children, }: Readonly<{ children: Reac
                             `flex gap-3 items-center btn btn-primary hover:bg-[#e7e7e9] rounded-md p-2 transition duration-200 text-center xl:text-left ${pathName === '/dashboard/account' ? 'bg-[#e7e7e9]' : ''}`
                         }><UserRound />Профиль</Link>
                 </section>
-                <section className="w-full">
+                <section className="w-full mt-10 lg:mt-0 xl:mt-0">
                     {children}
                 </section>
             </div>

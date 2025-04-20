@@ -90,8 +90,8 @@ export default function Home() {
                 </div>
             ) : (
                 <section className="h-full min-h-[90vh] pb-16">
-                    <div className="flex mx-3 justify-between items-start mt-10 h-60 xl:mx-10 xl:mt-20 xl:flex xl:h-2/3">
-                        <div className="rounded-xl row-span-2 h-60 xl:w-1/2 xl:h-full w-full overflow-auto"
+                    <div className="grid mx-3 xl:justify-between xl:items-start mt-10 h-60 xl:mx-10 xl:mt-20 xl:flex xl:h-2/3">
+                        <div className="rounded-xl h-60 xl:w-1/2 xl:h-full w-full overflow-auto"
                             onMouseEnter={() => setIsHovered(true)}
                             onMouseLeave={() => setIsHovered(false)}
                         >
@@ -136,8 +136,8 @@ export default function Home() {
                                 )}
                             </Carousel>
                         </div>
-                        <div className="xl:w-1/4 flex flex-1 justify-center items-center flex-col justify-between">
-                            <div className="w-1/2 border rounded-2xl shadow-lg p-5">
+                        <div className="xl:w-1/4 xl:flex xl:flex-1 xl:justify-center xl:items-center xl:flex-col xl:justify-between">
+                            <div className="xl:w-1/2 border rounded-2xl shadow-lg p-5 my-2">
                                 <h2 className="font-bold text-xl">{property?.name}</h2>
                                 <span className="flex items-center gap-1"><TiStarFullOutline color="orange" />{property?.rate}</span>
 
@@ -160,7 +160,7 @@ export default function Home() {
                                     </table>
                                 </div>
                             </div>
-                            <div className="border rounded-2xl shadow-lg p-5 mt-6 w-1/2">
+                            <div className="border rounded-2xl shadow-lg p-5 my-2 xl:mt-6 xl:w-1/2">
                                 <div className="">
                                     <p><span className="font-bold text-3xl">{Number(property?.price.toLocaleString())} ₽</span><span className="text-muted-foreground"> месяц</span></p>
                                 </div>
@@ -187,7 +187,7 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className="mt-12 mx-3 xl:mx-10 rounded-xl border shadow-sm overflow-hidden">
+                    <div className="mt-[560px] xl:mt-12 mx-3 xl:mx-10 rounded-xl border shadow-sm overflow-hidden">
                         <div className="p-6 border-b bg-gray-50">
                             <h2 className="text-xl font-semibold flex items-center gap-2">
                                 <FaRegCommentDots className="text-blue-600" />

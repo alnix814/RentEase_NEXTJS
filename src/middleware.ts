@@ -9,7 +9,7 @@ export async function middleware(req: NextRequest) {
     const token = await getToken({ req, secret });
 
     if (!token) {
-        return "Unathorized";
+        return console.log("Unathorized");
     }
 
     if (url.pathname.startsWith('/admin') && token.role != 'admin') {

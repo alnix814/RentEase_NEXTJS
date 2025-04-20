@@ -179,7 +179,7 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="w-full max-w-6xl mx-auto py-8 px-4">
+        <div className="w-full max-w-6xl mx-auto pb-8 px-4">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-6 mb-8 shadow-sm">
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                     <div className="bg-white dark:bg-gray-700 p-4 rounded-full shadow-md">
