@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/shared/header";
 import ClientSessionProvider from "@/components/ui/ClientSessionProvider";
 import { Toaster } from "sonner";
+import Footer from "@/components/shared/footer";
 
 const InterSans = Inter({
   subsets: ["latin", "cyrillic"],
@@ -28,6 +29,7 @@ export default function RootLayout({
         <ClientSessionProvider>
           <Header/>
           {children}
+          <Footer/>
           <Toaster/>
         </ClientSessionProvider>
 

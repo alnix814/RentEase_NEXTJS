@@ -31,7 +31,7 @@ export default function PropertyList() {
   };
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 border rounded-xl p-2">
       <h2 className="text-2xl mb-4">Список свойств</h2>
       <table className="w-full border-collapse border">
         <thead>

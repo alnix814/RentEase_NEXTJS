@@ -20,6 +20,9 @@ model User {
   accounts       Account?
   properties     Property[]
   sessions       Session[]
+  comments       Comments[]
+  rentals        Rental[]
+  sentMessages   Message[]
 }
 
 model Account {
@@ -38,6 +41,15 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+model Comments {
+  id                String @id @default(uuid())
+  userId            String @unique
+  propertyId        String 
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content           String
+  createdAt         DateTime
 }
 
 model Session {
@@ -73,6 +85,7 @@ model Property {
   rate          Float
   user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   PropertyImage PropertyImage[]
+  rentals       Rental[]
 }
 
 model PropertyImage {
@@ -80,4 +93,49 @@ model PropertyImage {
   propertyId String
   url        String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Rental {
+  id          String   @id @default(uuid())
+  propertyId  String
+  userId      String
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("pending") // pending, approved, rejected, completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment     Payment?
+  messages    Message[]
+
+  @@index([propertyId])
+  @@index([userId])
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  rentalId    String   @unique
+  amount      Decimal
+  status      String   @default("pending") // pending, completed, failed
+  paymentId   String?  // ID платежа от платежной системы
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rental      Rental   @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rental   Rental @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  rentalId String
+
+  sender   User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId String
+
+  @@index([rentalId])
+  @@index([senderId])
 }

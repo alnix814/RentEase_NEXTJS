@@ -108,7 +108,7 @@ export function CardDemo({
             <span className="text-md font-semibold">
               {Number(price.toLocaleString())}
             </span>
-            ₽ месяц
+            ₽ сутки
           </p>
         </div>
       </div>

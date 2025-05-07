@@ -24,7 +24,7 @@ export default function Header(classname: HeaderProps) {
   }
 
   return (
-    <header className={cn(`w-full border-b shadow-sm bg-white sticky top-0 z-50`, classname)}>
+    <header className={cn(`w-full border-b shadow-sm bg-white sticky top-0 z-50 bg-background/80 backdrop-blur-md`, classname)}>
       <div className="container mx-auto flex items-center justify-between py-4 px-6 h-16">
 
         <Link href="/" className="text-xl font-bold flex items-center gap-2">

@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/auth/[...nextauth].js", "src/app/api/auth/[...nextauth]/route.js", "src/app/api/auth/[...nextauth]/route.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/auth/[...nextauth].js", "src/app/api/auth/[...nextauth]/route.js", "src/app/api/auth/[...nextauth]/route.js", "server.js", "src/app/hooks/useWebSocket.ts"],
   "exclude": ["node_modules"]
 }

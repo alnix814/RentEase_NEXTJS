@@ -16,43 +16,24 @@ export default function AdminDashboard() {
     });
 
     if (response.ok) {
-      Toast_Custom({errormessage: 'Изображения загружены', setError: () => {}, type: 'success'})
+      Toast_Custom({ errormessage: 'Изображения загружены', setError: () => { }, type: 'success' })
     } else {
-      Toast_Custom({errormessage: 'Ошибка загрузки', setError: () => {}, type: 'error'})
+      Toast_Custom({ errormessage: 'Ошибка загрузки', setError: () => { }, type: 'error' })
     }
   }
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Панель администратора</h1>
-      <button onClick={() => add_photo()}>Загрузить изображения</button>
-
-      <div className="flex mb-4">
-        <button
-          onClick={() => setActiveTab('properties')}
-          className={`mr-4 px-4 py-2 ${activeTab === 'properties' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-        >
-          Свойства
-        </button>
-        <button
-          onClick={() => setActiveTab('images')}
-          className={`px-4 py-2 ${activeTab === 'images' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-          Изображения
+      <div className='w-full flex items-center justify-center p-16'>
+        <button className="relative overflow-hidden bg-white p-2 rounded-lg transition-all duration-300 ease-in-out group">
+          <span className="relative z-10 text-white font-medium">Волшебная кнопка</span>
+          <div className="absolute inset-0 bg-gradient-to-t from-sky-500 to-indigo-500 transition-opacity duration-300 ease-in-out opacity-100" />
         </button>
       </div>
 
-      {activeTab === 'properties' && (
-        <div>
-          <PropertyForm />
-          <PropertyList />
-        </div>
-      )}
 
-      {activeTab === 'images' && (
-        <DndProvider backend={HTML5Backend}>
-          <ImageUploader />
-        </DndProvider>
-      )}
+      <PropertyList />
     </div>
   );
 }
