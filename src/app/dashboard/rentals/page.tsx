@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,8 +48,6 @@ export default function RentalsPage() {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { data: session } = useSession();
 
   useEffect(() => {
     const fetchRentals = async () => {
@@ -89,7 +86,6 @@ export default function RentalsPage() {
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || !selectedRental) return;
 
-    setIsLoading(true);
     try {
       const response = await fetch('/api/messages', {
         method: 'POST',
@@ -108,7 +104,6 @@ export default function RentalsPage() {
       console.error('Error sending message:', error);
       Toast_Custom({ errormessage: 'Ошибка при отправке сообщения', setError: () => {} });
     } finally {
-      setIsLoading(false);
     }
   };
 

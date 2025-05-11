@@ -18,8 +18,7 @@ import { Card, CardHeader} from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { 
-    Home, Building2, Check, Info, Loader2, Camera, XCircle, 
+import { Building2, Check, Info, Loader2, Camera, XCircle, 
     Bed, Bath, Currency, MapPin, Layers, Building
 } from "lucide-react";
 import { Toast_Custom } from '@/components/ui/toast_custom';

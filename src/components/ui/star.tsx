@@ -6,7 +6,7 @@ interface Props {
     onChange: (rating: number) => void,
 }
 
-export default function Star({ classname, maxrating, onChange }: Props) {
+export default function Star({ onChange }: Props) {
 
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);

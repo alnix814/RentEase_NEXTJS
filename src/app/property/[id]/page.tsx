@@ -9,7 +9,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogFooter,
 } from "@/components/ui/dialog"
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -85,7 +84,7 @@ export default function Home() {
                 const data = await response.json();
                 const bookedDates: Date[] = [];
 
-                data.bookings.forEach((booking: any) => {
+                data.bookings.forEach((booking: { startDate: string, endDate: string }) => {
                     const start = new Date(booking.startDate);
                     const end = new Date(booking.endDate);
                     let current = start;
@@ -201,6 +200,7 @@ export default function Home() {
             }
         } catch (error) {
             Toast_Custom({ errormessage: 'Ошибка при отправке запроса', setError: () => { }, type: 'error' });
+            return error
         } finally {
             setRentalLoading(false);
         }
@@ -228,6 +228,7 @@ export default function Home() {
             }
         } catch (error) {
             Toast_Custom({ errormessage: 'Ошибка при обработке платежа', setError: () => { }, type: 'error' });
+            return error
         } finally {
             setPaymentLoading(false);
         }
@@ -552,7 +553,7 @@ export default function Home() {
                                                         {[...Array(5)].map((_, i) => (
                                                             <TiStarFullOutline
                                                                 key={i}
-                                                                color={i < (comment as any).rate ? "orange" : "gray"}
+                                                                color={"orange"}
                                                                 size={16}
                                                             />
                                                         ))}

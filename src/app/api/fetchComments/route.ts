@@ -1,6 +1,4 @@
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
-import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -24,7 +22,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
 
     try {
-        const { userId, propertyId, content, createdAt, rate } = await req.json();
+        const { userId, propertyId, content, createdAt } = await req.json();
 
         const comment = await prisma.comments.create({
             data: {
@@ -34,29 +32,6 @@ export async function POST(req: NextRequest) {
                 createdAt: createdAt,
             }
 
-        });
-
-        const rateProp = await prisma.property.findFirst({
-            where: {
-                id: propertyId,
-            },
-        });
-
-        let finalrate;
-
-        if (rateProp?.rate != 0) {
-            finalrate = (rateProp?.rate + rate) / 1.2;
-        } else {
-            finalrate = rate;
-        }
-
-        const property = await prisma.property.update({
-            where: {
-                id: propertyId,
-            },
-            data: {
-                rate:  finalrate,
-            }
         });
 
         return NextResponse.json(comment);

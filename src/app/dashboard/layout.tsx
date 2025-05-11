@@ -1,6 +1,6 @@
 "use client";
 
-import { AlignJustify, UserRound, BarChart3, Home } from "lucide-react";
+import { UserRound, BarChart3, Home } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
