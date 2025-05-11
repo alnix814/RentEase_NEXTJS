@@ -9,8 +9,9 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogFooter,
 } from "@/components/ui/dialog"
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -23,19 +24,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FaRegCommentDots } from "react-icons/fa";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
-import Star from "@/components/ui/star";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, differenceInDays, addDays } from "date-fns";
 import { ru } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
+import { Badge } from "@/components/ui/badge";
+import { FiCalendar, FiCreditCard, FiCheck, FiMessageCircle } from "react-icons/fi";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type CommentWithUser = Prisma.CommentsGetPayload<{
     include: { user: true };
 }>;
 
 export default function Home() {
-
     const params = useParams();
+    const router = useRouter();
     const id = params.id as string;
 
     const [isHovered, setIsHovered] = React.useState(false);
@@ -57,9 +60,12 @@ export default function Home() {
     const [rentalLoading, setRentalLoading] = useState(false);
     const [rentalId, setRentalId] = useState<string | null>(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
+    const [step, setStep] = useState<'dates' | 'confirmation' | 'payment' | 'success'>('dates');
+    const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
+    const [totalPrice, setTotalPrice] = useState<number>(0);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const fetchComments = async (id: string) => {
-
         const data = await fetch(`/api/fetchComments?id=${id}`, {
             method: 'GET',
             cache: 'no-store',
@@ -68,10 +74,34 @@ export default function Home() {
         if (data.ok) {
             setComments(await data.json());
         } else {
-            console.log('sgfasf')
+            console.log('Ошибка при загрузке комментариев')
         }
-
     }
+
+    const fetchBookedDates = async (propertyId: string) => {
+        try {
+            const response = await fetch(`/api/availability?propertyId=${propertyId}`);
+            if (response.ok) {
+                const data = await response.json();
+                const bookedDates: Date[] = [];
+
+                data.bookings.forEach((booking: any) => {
+                    const start = new Date(booking.startDate);
+                    const end = new Date(booking.endDate);
+                    let current = start;
+
+                    while (current <= end) {
+                        bookedDates.push(new Date(current));
+                        current = addDays(current, 1);
+                    }
+                });
+
+                setUnavailableDates(bookedDates);
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке занятых дат:', error);
+        }
+    };
 
     useEffect(() => {
         setFetchcom(false);
@@ -94,9 +124,8 @@ export default function Home() {
                 setLoading(false);
 
                 setCommentsLoading(true);
-
                 fetchComments(id);
-
+                fetchBookedDates(id);
                 setCommentsLoading(false);
 
             } else {
@@ -108,29 +137,38 @@ export default function Home() {
         fetchData();
     }, [id, fetchCom]);
 
-    const sendComment = async () => {
-
-        const response = await fetch(`/api/fetchComments`, {
-            method: "POST",
-            body: JSON.stringify({
-                userId: session.data?.user.id,
-                propertyId: id,
-                content: commentuser,
-                createdAt: new Date().toISOString(),
-                rate: rating,
-            })
-        });
-
-        if (response.ok) {
-            setFetchcom(true);
-            setRating(0);
-            setCommentuser("");
-        } else {
-            const data = await response.json();
-            Toast_Custom({ errormessage: data.error, setError: () => { }, type: 'error' });
+    useEffect(() => {
+        // Расчет общей стоимости при изменении дат
+        if (date?.from && date?.to && property) {
+            const days = Math.ceil((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24));
+            setTotalPrice(Number(property.price) * days);
         }
+    }, [date, property]);
 
-    }
+    useEffect(() => {
+        // Получение недоступных дат для календаря
+        const fetchUnavailableDates = async () => {
+            if (!id) return;
+            
+            try {
+                const response = await fetch(`/api/properties/availability?propertyId=${id}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Преобразуем строки дат в объекты Date
+                    const dates = data.unavailableDates.map((dateStr: string) => new Date(dateStr));
+                    setUnavailableDates(dates);
+                }
+            } catch (error) {
+                console.error('Ошибка при получении недоступных дат:', error);
+            }
+        };
+        
+        fetchUnavailableDates();
+    }, [id]);
 
     const handleRent = async () => {
         if (!date?.from || !date?.to) {
@@ -155,7 +193,8 @@ export default function Home() {
             if (response.ok) {
                 const data = await response.json();
                 setRentalId(data.rentalId);
-                Toast_Custom({ errormessage: 'Запрос на аренду отправлен', setError: () => { }, type: 'success' });
+                setStep('confirmation');
+                Toast_Custom({ errormessage: 'Запрос на аренду создан', setError: () => { }, type: 'success' });
             } else {
                 const data = await response.json();
                 Toast_Custom({ errormessage: data.error, setError: () => { }, type: 'error' });
@@ -181,9 +220,8 @@ export default function Home() {
             });
 
             if (response.ok) {
+                setStep('success');
                 Toast_Custom({ errormessage: 'Оплата успешно проведена', setError: () => { }, type: 'success' });
-                setRentalId(null);
-                setDate(undefined);
             } else {
                 const data = await response.json();
                 Toast_Custom({ errormessage: data.error, setError: () => { }, type: 'error' });
@@ -193,6 +231,41 @@ export default function Home() {
         } finally {
             setPaymentLoading(false);
         }
+    };
+
+    // Функция для проверки, является ли дата недоступной
+    const isDateUnavailable = (date: Date) => {
+        return unavailableDates.some(unavailableDate => 
+            unavailableDate.getFullYear() === date.getFullYear() &&
+            unavailableDate.getMonth() === date.getMonth() &&
+            unavailableDate.getDate() === date.getDate()
+        );
+    };
+
+    const handleContactOwner = () => {
+        if (!session.data?.user) {
+            Toast_Custom({ errormessage: 'Необходимо войти в систему', setError: () => { }, type: 'error' });
+            router.push('/login');
+            return;
+        }
+
+        // Здесь можно добавить логику для связи с владельцем
+        Toast_Custom({ errormessage: 'Сообщение отправлено владельцу', setError: () => { }, type: 'success' });
+    };
+
+    const handleDialogOpenChange = (open: boolean) => {
+        setIsDialogOpen(open);
+        if (!open) {
+            // Сбрасываем состояние при закрытии диалога, если аренда не была успешной
+            if (step !== 'success') {
+                setRentalId(null);
+                setDate(undefined);
+            }
+        }
+    };
+
+    const handleViewBookings = () => {
+        router.push('/dashboard/rentals');
     };
 
     return (
@@ -220,13 +293,12 @@ export default function Home() {
                                                     alt={`Property image ${index + 1}`}
                                                     layout="fill"
                                                     objectFit="cover"
-                                                    className="w-full h-full"
-                                                    quality={50}
+                                                    className="w-full h-full rounded-xl"
+                                                    quality={80}
                                                 />
                                             ) : (
                                                 <div className="w-full h-full">К сожалению нет изображения</div>
                                             )}
-
                                         </CarouselItem>
                                     ))}
                                 </CarouselContent>
@@ -253,11 +325,17 @@ export default function Home() {
                         </div>
                         <div className="xl:w-1/4 xl:flex xl:flex-1 xl:justify-center xl:items-center xl:flex-col xl:justify-between">
                             <div className="xl:w-1/2 border rounded-2xl shadow-lg p-5 my-2">
-                                <h2 className="font-bold text-xl">{property?.name}</h2>
-                                <span className="flex items-center gap-1"><TiStarFullOutline color="orange" />{property?.rate}</span>
+                                <div className="flex justify-between items-center">
+                                    <h2 className="font-bold text-xl">{property?.name}</h2>
+                                    <Badge variant="outline" className="bg-blue-50">
+                                        <span className="flex items-center gap-1">
+                                            <TiStarFullOutline color="orange" />{property?.rate}
+                                        </span>
+                                    </Badge>
+                                </div>
 
-                                <div className="mt-7 ">
-                                    <table className="text-base">
+                                <div className="mt-7">
+                                    <table className="text-base w-full">
                                         <tbody className="flex flex-col gap-2">
                                             <tr className="flex gap-5 w-full">
                                                 <th className="text-muted-foreground font-normal text-left w-40">Адрес</th>
@@ -277,54 +355,138 @@ export default function Home() {
                             </div>
                             <div className="border rounded-2xl shadow-lg p-5 my-2 xl:mt-6 xl:w-1/2">
                                 <div className="">
-                                    <p><span className="font-bold text-3xl">{Number(property?.price.toLocaleString())} ₽</span><span className="text-muted-foreground"> месяц</span></p>
+                                    <p><span className="font-bold text-3xl">{Number(property?.price).toLocaleString()} ₽</span><span className="text-muted-foreground"> сутки</span></p>
                                 </div>
-                                <div className="mt-10 flex flex-col gap-2 ">
-                                    <Button className="w-full rounded-xl h-12 text-md">Добавить в отложенное</Button>
-                                    <Dialog>
-                                        <DialogTrigger className="w-full rounded-xl h-12 text-md bg-gray-200 hover:bg-gray-300 duration-200">Арендовать</DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Выберите даты аренды</DialogTitle>
-                                                <DialogDescription>
-                                                    <div className="flex flex-col gap-4 mt-4">
-                                                        <Calendar
-                                                            mode="range"
-                                                            selected={date}
-                                                            onSelect={setDate}
-                                                            locale={ru}
-                                                            className="rounded-md border"
-                                                        />
-                                                        {date?.from && date?.to && (
-                                                            <div className="text-center">
-                                                                <p className="text-sm text-gray-500">
-                                                                    Вы выбрали период с {format(date.from, 'dd MMMM yyyy', { locale: ru })} по {format(date.to, 'dd MMMM yyyy', { locale: ru })}
-                                                                </p>
-                                                                {property && (
-                                                                    <p className="text-sm font-medium mt-2">
-                                                                        Стоимость: {Number(property.price) * Math.ceil((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24))} ₽
-                                                                    </p>
+                                <div className="mt-10 flex flex-col gap-2">
+                                    <Button
+                                        className="w-full rounded-xl h-12 text-md flex items-center gap-2"
+                                        onClick={handleContactOwner}
+                                    >
+                                        <FiMessageCircle />
+                                        Связаться с владельцем
+                                    </Button>
+                                    <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                className="w-full rounded-xl h-12 text-md bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+                                            >
+                                                <FiCalendar />
+                                                Арендовать
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-[600px]">
+                                            {step === 'success' ? (
+                                                <div className="flex flex-col items-center py-6">
+                                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                                        <FiCheck className="w-8 h-8 text-green-600" />
+                                                    </div>
+                                                    <h2 className="text-2xl font-bold mb-2">Аренда успешно оформлена!</h2>
+                                                    <p className="text-center text-gray-600 mb-6">
+                                                        Ваша аренда успешно оформлена и оплачена. Вы можете просмотреть детали в личном кабинете.
+                                                    </p>
+                                                    <Button onClick={handleViewBookings} className="w-full">
+                                                        Перейти к моим арендам
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <DialogHeader>
+                                                        <DialogTitle>Бронирование помещения</DialogTitle>
+                                                        <DialogDescription>
+                                                            Выберите даты аренды и оформите бронирование
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <Tabs defaultValue="dates" className="mt-4">
+                                                        <TabsList className="grid w-full grid-cols-2">
+                                                            <TabsTrigger value="dates">Выбор дат</TabsTrigger>
+                                                            <TabsTrigger value="payment" disabled={!rentalId}>Оплата</TabsTrigger>
+                                                        </TabsList>
+                                                        <TabsContent value="dates" className="">
+                                                            <div className="">
+                                                                <Calendar
+                                                                    mode="range"
+                                                                    selected={date}
+                                                                    onSelect={setDate}
+                                                                    locale={ru}
+                                                                    className="rounded-md border shadow flex items-center justify-center"
+                                                                    disabled={isDateUnavailable}
+                                                                    numberOfMonths={2}
+                                                                />
+                                                                {date?.from && date?.to && (
+                                                                    <div className="">
+                                                                        <p className="text-sm text-gray-700 mb-2">
+                                                                            Вы выбрали период с {format(date.from, 'dd MMMM yyyy', { locale: ru })} по {format(date.to, 'dd MMMM yyyy', { locale: ru })}
+                                                                        </p>
+                                                                        {property && (
+                                                                            <div className="space-y-2">
+                                                                                <div className="flex justify-between text-sm">
+                                                                                    <span>Стоимость за сутки:</span>
+                                                                                    <span>{Number(property.price).toLocaleString()} ₽</span>
+                                                                                </div>
+                                                                                <div className="flex justify-between text-sm">
+                                                                                    <span>Количество дней:</span>
+                                                                                    <span>{differenceInDays(date.to, date.from) + 1}</span>
+                                                                                </div>
+                                                                                <div className="flex justify-between font-bold pt-2 border-t">
+                                                                                    <span>Итого:</span>
+                                                                                    <span>{totalPrice.toLocaleString()} ₽</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                                <Button
+                                                                    onClick={handleRent}
+                                                                    disabled={rentalLoading || !date?.from || !date?.to}
+                                                                    className="w-full"
+                                                                >
+                                                                    {rentalLoading ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <AiOutlineLoading className="animate-spin" />
+                                                                            Отправка запроса...
+                                                                        </div>
+                                                                    ) : (
+                                                                        'Забронировать'
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+                                                        </TabsContent>
+                                                        <TabsContent value="payment" className="space-y-4">
+                                                            <div className="border rounded-lg p-4 bg-green-50">
+                                                                <h3 className="font-medium mb-2">Информация о бронировании</h3>
+                                                                {date?.from && date?.to && (
+                                                                    <div className="space-y-2 text-sm">
+                                                                        <div className="flex justify-between">
+                                                                            <span>Период аренды:</span>
+                                                                            <span>{format(date.from, 'dd.MM.yyyy', { locale: ru })} - {format(date.to, 'dd.MM.yyyy', { locale: ru })}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between font-bold">
+                                                                            <span>Итоговая сумма:</span>
+                                                                            <span>{totalPrice.toLocaleString()} ₽</span>
+                                                                        </div>
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                        )}
-                                                        {!rentalId ? (
-                                                            <Button 
-                                                                onClick={handleRent} 
-                                                                disabled={rentalLoading || !date?.from || !date?.to}
-                                                                className="w-full"
-                                                            >
-                                                                {rentalLoading ? (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <AiOutlineLoading className="animate-spin" />
-                                                                        Отправка запроса...
+                                                            <div className="border rounded-lg p-4">
+                                                                <h3 className="font-medium mb-4">Способ оплаты</h3>
+                                                                <div className="space-y-2">
+                                                                    <div className="flex items-center p-3 border rounded-md bg-blue-50">
+                                                                        <input
+                                                                            type="radio"
+                                                                            id="card"
+                                                                            name="payment"
+                                                                            checked
+                                                                            className="mr-2"
+                                                                        />
+                                                                        <label htmlFor="card" className="flex items-center gap-2">
+                                                                            <FiCreditCard />
+                                                                            Банковская карта
+                                                                        </label>
                                                                     </div>
-                                                                ) : (
-                                                                    'Отправить запрос на аренду'
-                                                                )}
-                                                            </Button>
-                                                        ) : (
-                                                            <Button 
-                                                                onClick={handlePayment} 
+                                                                </div>
+                                                            </div>
+                                                            <Button
+                                                                onClick={handlePayment}
                                                                 disabled={paymentLoading}
                                                                 className="w-full bg-green-600 hover:bg-green-700"
                                                             >
@@ -337,13 +499,12 @@ export default function Home() {
                                                                     'Оплатить'
                                                                 )}
                                                             </Button>
-                                                        )}
-                                                    </div>
-                                                </DialogDescription>
-                                            </DialogHeader>
+                                                        </TabsContent>
+                                                    </Tabs>
+                                                </>
+                                            )}
                                         </DialogContent>
                                     </Dialog>
-
                                 </div>
                                 <div className="mt-5 flex flex-col gap-2">
                                     <div className="flex items-center gap-2">
@@ -355,9 +516,6 @@ export default function Home() {
                                         <p className="font-semibold">
                                             {owner?.name}
                                         </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground text-sm">26-31 марта</p>
                                     </div>
                                 </div>
                             </div>
@@ -380,121 +538,80 @@ export default function Home() {
                                     </div>
                                 </div>
                             ) : comments.length > 0 ? (
-                                <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        {comments.map((comment) => (
-                                            <div key={comment.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                                                <div className="flex items-center gap-3 mb-3">
-                                                    <Avatar className="h-10 w-10">
-                                                        <AvatarImage src={comment.user.avatarUrl as string} />
-                                                        <AvatarFallback>{comment.user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <p className="font-medium">{comment.user.name}</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {new Date(comment.createdAt).toLocaleDateString('ru-RU')}
-                                                        </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    {comments.map((comment) => (
+                                        <div key={comment.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarImage src={comment.user.avatarUrl || ''} />
+                                                    <AvatarFallback>{comment.user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-medium">{comment.user.name}</p>
+                                                    <div className="flex items-center">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <TiStarFullOutline
+                                                                key={i}
+                                                                color={i < (comment as any).rate ? "orange" : "gray"}
+                                                                size={16}
+                                                            />
+                                                        ))}
                                                     </div>
                                                 </div>
-                                                <p className="text-gray-600 line-clamp-3">{comment.content}</p>
                                             </div>
-                                        ))}
-
-                                    </div>
-                                    <Dialog>
-                                        <DialogTrigger className="p-3 mt-2 rounded-xl h-12 text-md bg-gray-200 hover:bg-gray-300 duration-200">Оставить отзыв</DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Оставьте отзыв</DialogTitle>
-                                                <DialogDescription>
-                                                    <div className="flex flex-col gap-4">
-                                                        <div className="flex ">
-                                                            <Textarea className="border-black" value={commentuser} onChange={(e) => setCommentuser(e.target.value)} />
-                                                            <div className="flex flex-col-reverse m-3">
-                                                                {[...Array(5)].map((_, index) => {
-                                                                    const starValue = index + 1;
-                                                                    return (
-                                                                        <button
-                                                                            key={index}
-                                                                            type="button"
-                                                                            className={`text-4xl ${starValue <= (hover || rating) ? "text-[#FFA500]" : "text-gray-300"}`}
-                                                                            onClick={() => {
-                                                                                setRating(starValue);
-                                                                            }}
-                                                                            onMouseEnter={() => setHover(starValue)}
-                                                                            onMouseLeave={() => setHover(0)}
-                                                                        >
-                                                                            <span className="text-4xl " > &#9733; </span>
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <Button onClick={() => sendComment()}>Отправить</Button>
-                                                        </div>
-                                                    </div>
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                        </DialogContent>
-                                    </Dialog>
-                                </>
-
-                            ) : (
-                                <div>
-                                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                                        <div className="w-16 h-16 bg-gray-100 flex items-center justify-center rounded-full mb-4">
-                                            <FaRegCommentDots className="w-8 h-8 text-gray-400" />
+                                            <p className="text-gray-700">{comment.content}</p>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                {new Date(comment.createdAt).toLocaleDateString('ru-RU')}
+                                            </p>
                                         </div>
-                                        <h3 className="text-lg font-medium text-gray-900 mb-2">Отзывов пока нет</h3>
-                                        <p className="text-gray-500 max-w-md">
-                                            Будьте первым, кто оставит отзыв об этом объекте недвижимости.
-                                        </p>
-                                        <Dialog>
-                                            <DialogTrigger className="p-3 mt-2 rounded-xl h-12 text-md bg-gray-200 hover:bg-gray-300 duration-200">Оставить отзыв</DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader>
-                                                    <DialogTitle>Оставьте отзыв</DialogTitle>
-                                                    <DialogDescription>
-                                                        <div className="flex flex-col gap-4">
-                                                            <div className="flex ">
-                                                                <Textarea className="border-black" value={commentuser} onChange={(e) => setCommentuser(e.target.value)} />
-                                                                <div className="flex flex-col-reverse m-3">
-                                                                    {[...Array(5)].map((_, index) => {
-                                                                        const starValue = index + 1;
-                                                                        return (
-                                                                            <button
-                                                                                key={index}
-                                                                                type="button"
-                                                                                className={`text-4xl ${starValue <= (hover || rating) ? "text-[#FFA500]" : "text-gray-300"}`}
-                                                                                onClick={() => {
-                                                                                    setRating(starValue);
-                                                                                }}
-                                                                                onMouseEnter={() => setHover(starValue)}
-                                                                                onMouseLeave={() => setHover(0)}
-                                                                            >
-                                                                                <span className="text-4xl " > &#9733; </span>
-                                                                            </button>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <Button onClick={() => sendComment()}>Отправить</Button>
-                                                            </div>
-                                                        </div>
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 text-gray-500">
+                                    Пока нет отзывов для этого помещения
                                 </div>
                             )}
-
+                            {session.status === "authenticated" && (
+                                <div className="mt-8 border-t pt-6">
+                                    <h3 className="text-lg font-medium mb-4">Оставить отзыв</h3>
+                                    <div className="flex mb-4">
+                                        {[...Array(5)].map((_, index) => {
+                                            const ratingValue = index + 1;
+                                            return (
+                                                <label key={index}>
+                                                    <input
+                                                        type="radio"
+                                                        name="rating"
+                                                        className="hidden"
+                                                        value={ratingValue}
+                                                        onClick={() => setRating(ratingValue)}
+                                                    />
+                                                    <TiStarFullOutline
+                                                        className="cursor-pointer"
+                                                        color={ratingValue <= (hover || rating) ? "orange" : "gray"}
+                                                        size={30}
+                                                        onMouseEnter={() => setHover(ratingValue)}
+                                                        onMouseLeave={() => setHover(0)}
+                                                    />
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    <Textarea
+                                        placeholder="Поделитесь своими впечатлениями о помещении..."
+                                        className="min-h-[100px] mb-4"
+                                        value={commentuser}
+                                        onChange={(e) => setCommentuser(e.target.value)}
+                                    />
+                                    <Button onClick={() => setComments([])} disabled={!rating || !commentuser.trim()}>
+                                        Отправить отзыв
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </section>
             )}
         </>
-    )
+    );
 }

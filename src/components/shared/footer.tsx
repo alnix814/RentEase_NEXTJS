@@ -1,5 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+import { FaVk } from "react-icons/fa6";
+import { FaGithub } from "react-icons/fa";
+import { BsTelegram } from "react-icons/bs";
 
 export default function Footer() {
   return (
@@ -38,6 +41,12 @@ export default function Footer() {
             <h3 className="font-semibold text-lg mb-4">Контакты</h3>
             <p className="text-gray-600">support@rentease.com</p>
             <p className="text-gray-600">+7 (800) 123-45-67</p>
+          </div>
+
+          <div className="flex gap-2">
+            <Link href={'https://vk.com/naishodesu'}><FaVk size={30}/></Link>
+            <Link href={'https://github.com/alnix814'}><FaGithub size={30}/></Link>
+            <Link href={'https://t.me/akqqqw'}><BsTelegram size={30}/></Link>
           </div>
         </div>
         

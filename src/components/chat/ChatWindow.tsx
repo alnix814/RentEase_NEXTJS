@@ -5,6 +5,10 @@ import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Send } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 interface Message {
   id: string;
@@ -15,7 +19,8 @@ interface Message {
     id: string;
     name: string;
     email: string;
-    image: string | null;
+    image?: string | null;
+    avatarUrl?: string | null;
   };
 }
 
@@ -26,219 +31,129 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ chatId, messages, onSendMessage }: ChatWindowProps) {
-  const [message, setMessage] = useState('');
-  const [socketMessages, setSocketMessages] = useState<Message[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const joinMessageRef = useRef<boolean>(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
 
-  const connectWebSocket = () => {
-    try {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-
-      wsRef.current = new WebSocket('ws://localhost:3001');
-
-      wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
-        setIsConnected(true);
-        setError(null);
-      };
-
-      wsRef.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'message') {
-          const newMessage: Message = {
-            id: Date.now().toString(),
-            content: data.content,
-            senderId: data.senderId || 'unknown',
-            createdAt: new Date(),
-            sender: {
-              id: data.senderId || 'unknown',
-              name: data.username || 'Unknown',
-              email: '',
-              image: null
-            }
-          };
-          setSocketMessages((prev) => [...prev, newMessage]);
-        } else if (data.type === 'notification') {
-          console.log('Notification:', data.content);
-        }
-      };
-
-      wsRef.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
-        setIsConnected(false);
-        joinMessageRef.current = false;
-        
-      };
-
-      wsRef.current.onerror = (event) => {
-        console.error('WebSocket error:', event);
-        setIsConnected(false);
-        setError('Ошибка подключения к серверу. Попытка переподключения...');
-      };
-    } catch (err) {
-      console.error('Error creating WebSocket:', err);
-      setError('Ошибка создания соединения');
-      setIsConnected(false);
-    }
-  };
-
+  // Инициализация локальных сообщений при получении новых сообщений из пропсов
   useEffect(() => {
-    connectWebSocket();
+    setLocalMessages(messages);
+  }, [messages]);
 
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      if (wsRef.current) {
-        console.log('WebSocket disconnecting...');
-        if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'leave',
-            room: chatId,
-            username: session?.user?.name
-          }));
-        }
-        wsRef.current.close();
-      }
-    };
-  }, [chatId, session?.user?.name]);
-
-  // Отправляем сообщение о присоединении к комнате после установки соединения
+  // Прокрутка к последнему сообщению
   useEffect(() => {
-    if (isConnected && !joinMessageRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
-      try {
-        wsRef.current.send(JSON.stringify({
-          type: 'join',
-          room: chatId,
-          username: session?.user?.name
-        }));
-        joinMessageRef.current = true;
-      } catch (err) {
-        console.error('Error sending join message:', err);
-        setError('Ошибка при присоединении к чату');
-      }
-    }
-  }, [isConnected, chatId, session?.user?.name]);
-
-  useEffect(() => {
-    // Прокрутка к последнему сообщению
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, socketMessages]);
+  }, [localMessages]);
 
-  const handleTyping = () => {
-    if (!isTyping) {
-      setIsTyping(true);
-    }
+  // Настройка периодического опроса новых сообщений
+  useEffect(() => {
+    const fetchNewMessages = async () => {
+      try {
+        const response = await fetch(`/api/messages?rentalId=${chatId}`);
+        if (response.ok) {
+          const data = await response.json();
+          // Обновляем только если есть новые сообщения
+          if (data.length > localMessages.length) {
+            setLocalMessages(data);
+          }
+        }
+      } catch (error) {
+        console.error('Ошибка при получении новых сообщений:', error);
+      }
+    };
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
+    // Запускаем опрос каждые 3 секунды
+    pollingIntervalRef.current = setInterval(fetchNewMessages, 3000);
 
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-    }, 3000);
-  };
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [chatId, localMessages.length]);
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!newMessage.trim()) return;
 
+    setIsLoading(true);
     try {
-      await onSendMessage(message);
-
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({
-          type: 'message',
-          content: message,
-          room: chatId,
-          username: session?.user?.name
-        }));
-        console.log('Message sent via WebSocket');
-      } else {
-        console.error('WebSocket not connected');
-        setError('Нет соединения с сервером. Попытка переподключения...');
-        connectWebSocket();
-      }
-
-      setMessage('');
+      await onSendMessage(newMessage);
+      setNewMessage('');
     } catch (error) {
       console.error('Ошибка при отправке сообщения:', error);
-      setError('Ошибка при отправке сообщения');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const allMessages = [...messages, ...socketMessages];
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-lg">
-      {error && (
-        <div className="p-2 bg-destructive text-destructive-foreground text-sm">
-          {error}
-        </div>
-      )}
+    <div className="flex flex-col h-[500px] border rounded-lg">
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
         <div className="space-y-4">
-          {allMessages.map((msg) => (
+          {localMessages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex ${msg.senderId === session?.user?.id ? 'justify-end' : 'justify-start'
-                }`}
+              className={`flex ${msg.senderId === session?.user?.id ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[70%] rounded-lg p-3 ${msg.senderId === session?.user?.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                  }`}
+                className={`max-w-[70%] rounded-lg p-3 ${
+                  msg.senderId === session?.user?.id
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
               >
-                <p className="text-sm">{msg.content}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {new Date(msg.createdAt).toLocaleTimeString()}
-                </p>
+                <div className="flex items-center gap-2 mb-1">
+                  {msg.senderId !== session?.user?.id && (
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={msg.sender.image || msg.sender.avatarUrl || ''} />
+                      <AvatarFallback>
+                        {msg.sender.name?.substring(0, 2) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <span className="text-xs font-medium">
+                    {msg.senderId === session?.user?.id ? 'Вы' : msg.sender.name}
+                  </span>
+                  <span className="text-xs opacity-70">
+                    {format(new Date(msg.createdAt), 'HH:mm', { locale: ru })}
+                  </span>
+                </div>
+                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
               </div>
             </div>
           ))}
-          {otherUserTyping && (
-            <div className="flex justify-start">
-              <div className="bg-muted rounded-lg p-3">
-                <p className="text-sm">Печатает...</p>
-              </div>
-            </div>
-          )}
         </div>
       </ScrollArea>
-      <div className="p-4 border-t">
-        <div className="flex gap-2">
-          <Input
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value);
-              handleTyping();
-            }}
-            placeholder="Введите сообщение..."
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            disabled={!isConnected}
-          />
-          <Button 
-            onClick={handleSendMessage}
-            disabled={!isConnected}
-          >
-            {isConnected ? 'Отправить' : 'Подключение...'}
-          </Button>
-        </div>
+
+      <div className="p-3 border-t flex gap-2">
+        <Input
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Введите сообщение..."
+          disabled={isLoading}
+          className="flex-1"
+        />
+        <Button 
+          onClick={handleSendMessage} 
+          disabled={isLoading || !newMessage.trim()}
+          size="icon"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
-} 
+}

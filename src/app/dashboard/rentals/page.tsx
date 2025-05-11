@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +10,6 @@ import { MessageSquare, Calendar, MapPin, Home, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Toast_Custom } from '@/components/ui/toast_custom';
-import { io, Socket } from 'socket.io-client';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 
 interface Rental {
@@ -47,15 +46,11 @@ interface Message {
 }
 
 export default function RentalsPage() {
-  const { data: session } = useSession();
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [socketMessages, setSocketMessages] = useState<Message[]>([]);
-  const socketRef = useRef<Socket | null>(null);
+  const { data: session } = useSession();
 
   useEffect(() => {
     const fetchRentals = async () => {
@@ -91,8 +86,8 @@ export default function RentalsPage() {
     }
   }, [selectedRental]);
 
-  const handleSendMessage = async (message: string) => {
-    if (!newMessage.trim() || !selectedRental) return;
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() || !selectedRental) return;
 
     setIsLoading(true);
     try {
@@ -101,7 +96,7 @@ export default function RentalsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rentalId: selectedRental.id,
-          content: message,
+          content: content,
         }),
       });
 
@@ -109,7 +104,6 @@ export default function RentalsPage() {
       
       const newMessage = await response.json();
       setMessages(prev => [...prev, newMessage]);
-      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
       Toast_Custom({ errormessage: 'Ошибка при отправке сообщения', setError: () => {} });
@@ -251,4 +245,4 @@ export default function RentalsPage() {
       </div>
     </div>
   );
-} 
+}
