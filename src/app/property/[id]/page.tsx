@@ -144,31 +144,6 @@ export default function Home() {
         }
     }, [date, property]);
 
-    useEffect(() => {
-        // Получение недоступных дат для календаря
-        const fetchUnavailableDates = async () => {
-            if (!id) return;
-            
-            try {
-                const response = await fetch(`/api/properties/availability?propertyId=${id}`, {
-                    method: 'GET',
-                    cache: 'no-store',
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    // Преобразуем строки дат в объекты Date
-                    const dates = data.unavailableDates.map((dateStr: string) => new Date(dateStr));
-                    setUnavailableDates(dates);
-                }
-            } catch (error) {
-                console.error('Ошибка при получении недоступных дат:', error);
-            }
-        };
-        
-        fetchUnavailableDates();
-    }, [id]);
-
     const handleRent = async () => {
         if (!date?.from || !date?.to) {
             Toast_Custom({ errormessage: 'Выберите даты аренды', setError: () => { }, type: 'error' });
@@ -205,6 +180,44 @@ export default function Home() {
             setRentalLoading(false);
         }
     };
+
+    const handleComment = async () => {
+        if (!commentuser || !rating) {
+            Toast_Custom({ errormessage: 'Заполните все поля', setError: () => { }, type: 'error' });
+            return;
+        }
+
+        setCommentsLoading(true);
+        
+        try {
+            const response = await fetch('/api/fetchComments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: session.data?.user?.id,
+                    propertyId: id,
+                    content: commentuser,
+                    createdAt: new Date().toISOString(), // Используем new Date() для корректной даты
+                }),
+            })
+
+            if (response.ok) {
+                setCommentuser('');
+                setRating(0);
+                fetchComments(id);
+                Toast_Custom({ errormessage: 'Комментарий успешно добавлен', setError: () => { }, type: 'success' });
+            } else {
+                const data = await response.json();
+                Toast_Custom({ errormessage: data.error || 'Ошибка при отправке комментария', setError: () => { }, type: 'error' });
+            }
+        } catch {
+            Toast_Custom({ errormessage: 'Ошибка при отправке комментария', setError: () => { }, type: 'error' });
+        } finally {
+            setCommentsLoading(false);
+        }
+    }
 
     const handlePayment = async () => {
         if (!rentalId) return;
@@ -604,7 +617,7 @@ export default function Home() {
                                         value={commentuser}
                                         onChange={(e) => setCommentuser(e.target.value)}
                                     />
-                                    <Button onClick={() => setComments([])} disabled={!rating || !commentuser.trim()}>
+                                    <Button onClick={() => handleComment()} disabled={!rating || !commentuser.trim()}>
                                         Отправить отзыв
                                     </Button>
                                 </div>

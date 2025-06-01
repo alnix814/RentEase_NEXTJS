@@ -45,7 +45,7 @@ model Account {
 
 model Comments {
   id                String @id @default(uuid())
-  userId            String @unique
+  userId            String 
   propertyId        String 
   user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   content           String

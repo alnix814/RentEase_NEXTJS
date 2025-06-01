@@ -31,12 +31,11 @@ export async function POST(req: NextRequest) {
                 content: content,
                 createdAt: createdAt,
             }
-
         });
 
         return NextResponse.json(comment);
-    } catch {
-        return NextResponse.json({error: 'Вы уже оставили комментарий'});
+    } catch (error) {
+        return NextResponse.json({error: JSON.stringify(error)});
     }
 
 

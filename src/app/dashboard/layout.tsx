@@ -29,7 +29,6 @@ export default function DashboardLayout({ children, }: Readonly<{ children: Reac
                     {children}
                 </section>
             </div>
-
         </div>
     );
 }
